@@ -328,7 +328,6 @@ socket.on('dice_rolled', (data) => {
       document.getElementById('winner-text').innerText = `${data.winnerData.winnerName} Berhasil Mencapai Petak 30 & Menang! 🎉`;
       document.getElementById('voucher-text').innerText = `"${data.winnerData.voucher}"`;
       
-      // Update Statistik
       if (data.winnerData.stats) {
         document.getElementById('stat-rolls').innerText = data.winnerData.stats.totalRolls;
         document.getElementById('stat-ladders').innerText = data.winnerData.stats.laddersHit;
@@ -351,13 +350,18 @@ socket.on('dice_rolled', (data) => {
   }
 });
 
-socket.on('game_reset', (roomData) => {
+socket.on('game_reset', (data) => {
+  document.getElementById('victory-modal').classList.add('hidden');
+  document.getElementById('event-modal').classList.add('hidden');
+
   showNotice("Permainan Diulang Kembali ke Petak 1! 🔄");
-  currentTurnPlayer = roomData.players[0].name;
+
+  currentTurnPlayer = data.turnPlayer;
   document.getElementById('turn-display').innerText = currentTurnPlayer;
   document.getElementById('dice-view').innerText = '🎲';
   document.getElementById('dice-result-text').innerText = 'Gilirannya dimainkan!';
-  updatePawns(roomData.players);
+
+  updatePawns(data.players);
 });
 
 socket.on('sync_bgm', (data) => {
