@@ -7,6 +7,7 @@ let currentPlayer = '';
 let currentTurnPlayer = '';
 let selectedBody = '🧸';
 let userFaceData = null;
+let isHost = false;
 let isBGMPlaying = false;
 let bgmInterval = null;
 
@@ -35,22 +36,13 @@ function copyInviteLink() {
 }
 
 function toggleBGM() {
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  if (!isHost) {
+    showNotice("Hanya Room Master yang bisa mengatur musik latar! 🎵");
+    return;
   }
 
-  const bgmIcon = document.getElementById('bgm-icon');
-  
-  if (isBGMPlaying) {
-    clearInterval(bgmInterval);
-    isBGMPlaying = false;
-    bgmIcon.className = "fa-solid fa-music-slash";
-  } else {
-    isBGMPlaying = true;
-    bgmIcon.className = "fa-solid fa-music text-rose-600 animate-spin";
-    playBGMNotes();
-    bgmInterval = setInterval(playBGMNotes, 8000);
-  }
+  const newStatus = !isBGMPlaying;
+  socket.emit('toggle_bgm', { roomId: currentRoom, isPlaying: newStatus });
 }
 
 function playBGMNotes() {
@@ -171,7 +163,7 @@ function showNotice(text) {
   setTimeout(() => {
     notice.classList.replace('animate__bounceIn', 'animate__bounceOut');
     setTimeout(() => notice.remove(), 500);
-  }, 2000);
+  }, 2500);
 }
 
 function renderBoard() {
@@ -273,6 +265,11 @@ function rollDice() {
   socket.emit('roll_dice', { roomId: currentRoom, player: currentPlayer });
 }
 
+function requestRematch() {
+  document.getElementById('victory-modal').classList.add('hidden');
+  socket.emit('rematch_game', { roomId: currentRoom });
+}
+
 function sendEmoji(emoji) {
   socket.emit('send_emoji', { roomId: currentRoom, emoji: emoji, player: currentPlayer });
 }
@@ -330,6 +327,15 @@ socket.on('dice_rolled', (data) => {
     setTimeout(() => {
       document.getElementById('winner-text').innerText = `${data.winnerData.winnerName} Berhasil Mencapai Petak 30 & Menang! 🎉`;
       document.getElementById('voucher-text').innerText = `"${data.winnerData.voucher}"`;
+      
+      // Update Statistik
+      if (data.winnerData.stats) {
+        document.getElementById('stat-rolls').innerText = data.winnerData.stats.totalRolls;
+        document.getElementById('stat-ladders').innerText = data.winnerData.stats.laddersHit;
+        document.getElementById('stat-snakes').innerText = data.winnerData.stats.snakesHit;
+        document.getElementById('stat-tod').innerText = data.winnerData.stats.todHit;
+      }
+
       document.getElementById('victory-modal').classList.remove('hidden');
     }, 500);
   } else if (data.eventData) {
@@ -345,7 +351,45 @@ socket.on('dice_rolled', (data) => {
   }
 });
 
+socket.on('game_reset', (roomData) => {
+  showNotice("Permainan Diulang Kembali ke Petak 1! 🔄");
+  currentTurnPlayer = roomData.players[0].name;
+  document.getElementById('turn-display').innerText = currentTurnPlayer;
+  document.getElementById('dice-view').innerText = '🎲';
+  document.getElementById('dice-result-text').innerText = 'Gilirannya dimainkan!';
+  updatePawns(roomData.players);
+});
+
+socket.on('sync_bgm', (data) => {
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  const bgmIcon = document.getElementById('bgm-icon');
+  isBGMPlaying = data.isPlaying;
+
+  if (isBGMPlaying) {
+    bgmIcon.className = "fa-solid fa-music text-rose-600 animate-spin";
+    playBGMNotes();
+    if (bgmInterval) clearInterval(bgmInterval);
+    bgmInterval = setInterval(playBGMNotes, 8000);
+  } else {
+    if (bgmInterval) clearInterval(bgmInterval);
+    bgmIcon.className = "fa-solid fa-music-slash";
+  }
+});
+
+socket.on('player_status', (data) => {
+  if (data.type === 'disconnect' && data.name !== currentPlayer) {
+    showNotice(`⚠️ ${data.name} terputus dari jaringan/menutup game!`);
+  }
+});
+
 socket.on('room_data', (data) => {
+  if (data.players.length > 0 && data.players[0].name === currentPlayer) {
+    isHost = true;
+  }
+
   const playersHtml = data.players.map(p => {
     return p.face 
       ? `<span class="flex items-center gap-1"><img src="${p.face}" class="w-4 h-4 rounded-full object-cover"/> ${p.name}</span>`
