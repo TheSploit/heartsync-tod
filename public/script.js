@@ -1,11 +1,10 @@
-const socket = io();
+const socket = io('https://industrious-courage-production.up.railway.app');
 
 let currentRoom = '';
 let currentPlayer = '';
 let selectedBody = '🧸';
 let userFaceData = null;
 
-// Audio Synthesizer (SFX Alami tanpa file MP3 eksternal)
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
@@ -42,6 +41,14 @@ function playSound(type) {
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
     osc.start();
     osc.stop(audioCtx.currentTime + 0.4);
+  } else if (type === 'win') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.5);
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
   }
 }
 
@@ -74,7 +81,9 @@ function renderBoard() {
     tile.id = `tile-${i}`;
     tile.className = `h-12 md:h-16 rounded-xl flex flex-col items-center justify-between p-1 text-[10px] md:text-xs font-bold relative border transition-all`;
 
-    if ([3, 9, 16].includes(i)) {
+    if (i === 30) {
+      tile.classList.add('bg-amber-200', 'border-amber-400', 'text-amber-800');
+    } else if ([3, 9, 16].includes(i)) {
       tile.classList.add('bg-emerald-100', 'border-emerald-300', 'text-emerald-700');
     } else if ([14, 21, 28].includes(i)) {
       tile.classList.add('bg-amber-100', 'border-amber-300', 'text-amber-700');
@@ -85,6 +94,7 @@ function renderBoard() {
     }
 
     let badge = i;
+    if (i === 30) badge = `FINISH 👑`;
     if ([3, 9, 16].includes(i)) badge = `${i} 🪜`;
     if ([14, 21, 28].includes(i)) badge = `${i} 🐍`;
     if ([5, 8, 12, 19, 23, 27].includes(i)) badge = `${i} ❓`;
@@ -157,7 +167,6 @@ function closeModal() {
   document.getElementById('event-modal').classList.add('hidden');
 }
 
-// Animasi Emoji Melayang
 socket.on('receive_emoji', (data) => {
   const container = document.getElementById('emoji-container');
   const el = document.createElement('div');
@@ -181,12 +190,19 @@ socket.on('dice_rolled', (data) => {
 
   updatePawns(data.players);
 
-  if (data.eventData) {
+  if (data.winnerData) {
+    playSound('win');
+    setTimeout(() => {
+      document.getElementById('winner-text').innerText = `${data.winnerData.winnerName} Berhasil Mencapai Petak 30 & Menang! 🎉`;
+      document.getElementById('voucher-text').innerText = `"${data.winnerData.voucher}"`;
+      document.getElementById('victory-modal').classList.remove('hidden');
+    }, 500);
+  } else if (data.eventData) {
     if (data.eventData.type.includes('TANGGA')) playSound('ladder');
     if (data.eventData.type.includes('ULAR')) playSound('snake');
 
     setTimeout(() => {
-      document.getElementById('event-badge').innerText = data.eventData.type;
+      document.getElementById('event-badge').innerText = `${data.eventData.type} (${data.eventData.targetPlayer})`;
       document.getElementById('event-title').innerText = data.eventData.title;
       document.getElementById('event-text').innerText = `"${data.eventData.text}"`;
       document.getElementById('event-modal').classList.remove('hidden');
