@@ -35,6 +35,8 @@ function getRandomCard(type) {
 }
 
 io.on('connection', (socket) => {
+  console.log('User terhubung:', socket.id);
+
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace }) => {
     socket.join(roomId);
 
@@ -152,9 +154,14 @@ io.on('connection', (socket) => {
 
     room.players.forEach(p => p.position = 1);
     room.turnIndex = 0;
+    room.isStarted = true;
     room.stats = { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 };
 
-    io.sockets.in(roomId).emit('game_reset', room);
+    io.sockets.in(roomId).emit('game_reset', {
+      players: room.players,
+      turnPlayer: room.players[0].name,
+      stats: room.stats
+    });
   });
 
   socket.on('toggle_bgm', ({ roomId, isPlaying }) => {
