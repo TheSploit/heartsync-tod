@@ -11,7 +11,8 @@ const io = new Server(server, {
     origin: "*",
     methods: ["GET", "POST"]
   },
-  maxHttpBufferSize: 1e7
+  transports: ['websocket', 'polling'],
+  maxHttpBufferSize: 1e8
 });
 
 app.use(express.static('public'));
@@ -37,6 +38,8 @@ function getRandomCard(type) {
 }
 
 io.on('connection', (socket) => {
+  console.log('User terhubung:', socket.id);
+
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace }) => {
     socket.join(roomId);
 
@@ -50,13 +53,12 @@ io.on('connection', (socket) => {
 
     const validName = playerName || `Pemain ${rooms[roomId].players.length + 1}`;
 
-    // Cek agar ID socket yang sama tidak terdaftar ganda
-    const existingPlayerIndex = rooms[roomId].players.findIndex(p => p.id === socket.id);
-    if (existingPlayerIndex !== -1) {
-      rooms[roomId].players[existingPlayerIndex] = {
+    const existingIndex = rooms[roomId].players.findIndex(p => p.id === socket.id);
+    if (existingIndex !== -1) {
+      rooms[roomId].players[existingIndex] = {
         id: socket.id,
         name: validName,
-        position: rooms[roomId].players[existingPlayerIndex].position || 1,
+        position: rooms[roomId].players[existingIndex].position || 1,
         body: avatarBody || '🧸',
         face: avatarFace || null
       };
@@ -70,18 +72,16 @@ io.on('connection', (socket) => {
       });
     }
 
-    // Paksa status game langsung dimulai jika pemain minimal 2
     if (rooms[roomId].players.length >= 2) {
       rooms[roomId].isStarted = true;
     }
 
-    // Emit data room ke SEMUA koneksi di room tersebut secara eksplisit
-    io.in(roomId).emit('room_data', rooms[roomId]);
+    io.sockets.in(roomId).emit('room_data', rooms[roomId]);
   });
 
   socket.on('roll_dice', ({ roomId, player }) => {
     const room = rooms[roomId];
-    if (!room || !room.isStarted) return;
+    if (!room) return;
 
     const currentPlayer = room.players[room.turnIndex];
     if (!currentPlayer || currentPlayer.name !== player) return;
@@ -134,7 +134,7 @@ io.on('connection', (socket) => {
     currentPlayer.position = newPos;
     room.turnIndex = (room.turnIndex + 1) % room.players.length;
 
-    io.in(roomId).emit('dice_rolled', {
+    io.sockets.in(roomId).emit('dice_rolled', {
       player: currentPlayer.name,
       diceValue: diceValue,
       players: room.players,
@@ -145,7 +145,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_emoji', ({ roomId, emoji, player }) => {
-    io.in(roomId).emit('receive_emoji', { emoji, player });
+    io.sockets.in(roomId).emit('receive_emoji', { emoji, player });
   });
 
   socket.on('disconnect', () => {
