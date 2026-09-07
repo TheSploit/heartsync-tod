@@ -12,12 +12,10 @@
 </head>
 <body class="bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden">
 
-  <!-- Container Reaksi Emoji Melayang -->
   <div id="emoji-container" class="fixed inset-0 pointer-events-none z-50"></div>
 
   <div class="w-full max-w-md md:max-w-6xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-rose-200/50 p-4 md:p-8 transition-all duration-300 relative z-10">
     
-    <!-- Header -->
     <div class="text-center mb-4 md:mb-6">
       <h1 class="text-2xl md:text-4xl font-extrabold text-rose-600 tracking-tight flex items-center justify-center gap-2">
         HeartSync <i class="fa-solid fa-heart animate-pulse text-rose-500"></i>
@@ -110,7 +108,6 @@
         </div>
 
         <div class="space-y-3">
-          <!-- Panel Dadu -->
           <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm text-center space-y-3">
             <span class="text-xs font-bold text-gray-400 block uppercase">Dadu Interaktif</span>
             
@@ -128,7 +125,6 @@
             </button>
           </div>
 
-          <!-- Panel Tombol Reaksi Emoji Real-Time -->
           <div class="bg-white p-3 rounded-2xl border border-rose-100 shadow-sm text-center space-y-2">
             <span class="text-[10px] font-bold text-gray-400 uppercase block">Kirim Reaksi</span>
             <div class="flex justify-center gap-2">
@@ -152,6 +148,25 @@
           <button onclick="closeModal()" 
             class="w-full py-2.5 bg-rose-500 text-white font-bold text-xs md:text-sm rounded-xl shadow hover:bg-rose-600 transition-all">
             Lanjutkan Permainan
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Kemenangan & Voucher Hadiah -->
+      <div id="victory-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-gradient-to-b from-rose-50 to-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 border-2 border-rose-300 shadow-2xl animate__animated animate__bounceIn">
+          <div class="text-5xl animate-bounce">🏆</div>
+          <h2 class="text-xl font-black text-rose-600">SELAMAT!</h2>
+          <p id="winner-text" class="text-sm font-bold text-gray-700"></p>
+
+          <div class="bg-amber-50 p-4 rounded-2xl border-2 border-dashed border-amber-300 space-y-2">
+            <span class="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest block">VOUCHER HADIAH SPESIAL</span>
+            <p id="voucher-text" class="text-xs font-bold text-amber-900 italic"></p>
+          </div>
+
+          <button onclick="location.reload()" 
+            class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-lg hover:from-rose-600 hover:to-pink-600 transition-all">
+            Main Lagi 🔄
           </button>
         </div>
       </div>
