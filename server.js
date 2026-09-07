@@ -148,6 +148,10 @@ io.on('connection', (socket) => {
     io.sockets.in(roomId).emit('receive_emoji', { emoji, player });
   });
 
+  socket.on('send_quick_chat', ({ roomId, message, player }) => {
+    io.sockets.in(roomId).emit('receive_quick_chat', { message, player });
+  });
+
   socket.on('disconnect', () => {
     console.log('User terputus:', socket.id);
   });
