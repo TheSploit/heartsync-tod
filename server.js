@@ -18,6 +18,14 @@ const ladders = { 3: 11, 9: 18, 16: 25 };
 const snakes = { 14: 4, 21: 10, 28: 12 };
 const todTiles = [5, 8, 12, 19, 23, 27];
 
+const vouchers = [
+  "Bebas Minta Dimanja Seharian Full! ❤️",
+  "Voucher Gratis Di-Gombalin 10 Kali! 😘",
+  "Hak Pilih Tempat Makan / Kulineran Pas Ketemu Nanti! 🍕",
+  "Bebas Minta Dibelikan Snack / Minuman Favorit! 🧋",
+  "Voucher Minta Video Call Kapan Saja Bebas Ditolak! 📞"
+];
+
 function getRandomCard(type) {
   const cardList = cards[type.toLowerCase()] || [];
   if (cardList.length === 0) return null;
@@ -65,12 +73,20 @@ io.on('connection', (socket) => {
     if (newPos > 30) newPos = 30;
 
     let eventData = null;
+    let winnerData = null;
 
-    if (ladders[newPos]) {
+    if (newPos === 30) {
+      const randomVoucher = vouchers[Math.floor(Math.random() * vouchers.length)];
+      winnerData = {
+        winnerName: currentPlayer.name,
+        voucher: randomVoucher
+      };
+    } else if (ladders[newPos]) {
       const targetPos = ladders[newPos];
       eventData = {
+        targetPlayer: currentPlayer.name,
         type: 'TANGGA 🪜',
-        title: 'Asik, Naik Tangga!',
+        title: `Asik, ${currentPlayer.name} Naik Tangga!`,
         text: `Kamu mendarat di petak ${newPos} dan naik ke petak ${targetPos}! Sebutkan 1 hal manis tentang pasanganmu!`,
         targetPos: targetPos
       };
@@ -78,8 +94,9 @@ io.on('connection', (socket) => {
     } else if (snakes[newPos]) {
       const targetPos = snakes[newPos];
       eventData = {
+        targetPlayer: currentPlayer.name,
         type: 'ULAR 🐍',
-        title: 'Aduh, Dipatok Ular!',
+        title: `Aduh, ${currentPlayer.name} Dipatok Ular!`,
         text: `Kamu terperosok dari petak ${newPos} ke petak ${targetPos}! Panggil pasanganmu 'Yang Mulia' di giliran selanjutnya.`,
         targetPos: targetPos
       };
@@ -88,8 +105,9 @@ io.on('connection', (socket) => {
       const type = Math.random() < 0.5 ? 'truth' : 'dare';
       const card = getRandomCard(type);
       eventData = {
+        targetPlayer: currentPlayer.name,
         type: `PETAK ${type.toUpperCase()} 📜`,
-        title: `Tantangan ${type.toUpperCase()}!`,
+        title: `Tantangan ${type.toUpperCase()} untuk ${currentPlayer.name}!`,
         text: card ? card.text : "Lakukan gombalan manis selama 10 detik!",
         targetPos: newPos
       };
@@ -103,11 +121,11 @@ io.on('connection', (socket) => {
       diceValue: diceValue,
       players: room.players,
       turnPlayer: room.players[room.turnIndex].name,
-      eventData: eventData
+      eventData: eventData,
+      winnerData: winnerData
     });
   });
 
-  // Event Reaksi Emoji Real-Time
   socket.on('send_emoji', ({ roomId, emoji, player }) => {
     io.to(roomId).emit('receive_emoji', { emoji, player });
   });
