@@ -5,84 +5,111 @@ const cards = require('./cards.json');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+const io = new Server(server, {
+  maxHttpBufferSize: 1e7
+});
 
 app.use(express.static('public'));
 
 const rooms = {};
 
-// Daftar hukuman acak kalau pemain memilih PASS
-const punishments = [
-  "Traktir boba / makanan kesukaan lewat GoFood/GrabFood!",
-  "Nurutin 1 permintaan pasangan tanpa bantah seharian ini!",
-  "Kirim foto muka paling cemberut/konyol sekarang!",
-  "Nyanyi lagu favorit pasangan penuh penghayatan di VN/Call!",
-  "Puji pasangan setinggi langit selama 1 menit penuh!"
-];
+const ladders = { 3: 11, 9: 18, 16: 25 };
+const snakes = { 14: 4, 21: 10, 28: 12 };
+const todTiles = [5, 8, 12, 19, 23, 27];
 
-function getRandomCard(roomId, type) {
-  // Gabungkan kartu bawaan dengan kartu rahasia buatan pemain di room ini
-  const defaultCards = cards[type.toLowerCase()] || [];
-  const customCards = rooms[roomId]?.customCards?.[type.toLowerCase()] || [];
-  const allCards = [...defaultCards, ...customCards];
-
-  if (allCards.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * allCards.length);
-  return allCards[randomIndex];
+function getRandomCard(type) {
+  const cardList = cards[type.toLowerCase()] || [];
+  if (cardList.length === 0) return null;
+  return cardList[Math.floor(Math.random() * cardList.length)];
 }
 
 io.on('connection', (socket) => {
-  socket.on('join_room', ({ roomId, playerName }) => {
+  socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace }) => {
     socket.join(roomId);
 
     if (!rooms[roomId]) {
       rooms[roomId] = { 
         players: [],
-        customCards: { truth: [], dare: [] }
+        turnIndex: 0,
+        isStarted: false
       };
     }
 
-    rooms[roomId].players.push({ id: socket.id, name: playerName });
+    const validName = playerName || `Pemain ${rooms[roomId].players.length + 1}`;
+
+    rooms[roomId].players.push({ 
+      id: socket.id, 
+      name: validName,
+      position: 1,
+      body: avatarBody || '🧸',
+      face: avatarFace || null
+    });
+
+    if (rooms[roomId].players.length >= 2) {
+      rooms[roomId].isStarted = true;
+    }
+
     io.to(roomId).emit('room_data', rooms[roomId]);
   });
 
-  socket.on('draw_card', ({ roomId, player, type }) => {
-    const selectedCard = getRandomCard(roomId, type);
+  socket.on('roll_dice', ({ roomId, player }) => {
+    const room = rooms[roomId];
+    if (!room || !room.isStarted) return;
 
-    if (selectedCard) {
-      const payload = {
-        player: player,
-        type: type.toUpperCase(),
-        category: selectedCard.category || "Kartu Rahasia",
-        text: selectedCard.text
+    const currentPlayer = room.players[room.turnIndex];
+    if (!currentPlayer || currentPlayer.name !== player) return;
+
+    const diceValue = Math.floor(Math.random() * 6) + 1;
+    let newPos = currentPlayer.position + diceValue;
+    if (newPos > 30) newPos = 30;
+
+    let eventData = null;
+
+    if (ladders[newPos]) {
+      const targetPos = ladders[newPos];
+      eventData = {
+        type: 'TANGGA 🪜',
+        title: 'Asik, Naik Tangga!',
+        text: `Kamu mendarat di petak ${newPos} dan naik ke petak ${targetPos}! Sebutkan 1 hal manis tentang pasanganmu!`,
+        targetPos: targetPos
       };
-
-      io.to(roomId).emit('card_drawn', payload);
+      newPos = targetPos;
+    } else if (snakes[newPos]) {
+      const targetPos = snakes[newPos];
+      eventData = {
+        type: 'ULAR 🐍',
+        title: 'Aduh, Dipatok Ular!',
+        text: `Kamu terperosok dari petak ${newPos} ke petak ${targetPos}! Panggil pasanganmu 'Yang Mulia' di giliran selanjutnya.`,
+        targetPos: targetPos
+      };
+      newPos = targetPos;
+    } else if (todTiles.includes(newPos)) {
+      const type = Math.random() < 0.5 ? 'truth' : 'dare';
+      const card = getRandomCard(type);
+      eventData = {
+        type: `PETAK ${type.toUpperCase()} 📜`,
+        title: `Tantangan ${type.toUpperCase()}!`,
+        text: card ? card.text : "Lakukan gombalan manis selama 10 detik!",
+        targetPos: newPos
+      };
     }
+
+    currentPlayer.position = newPos;
+    room.turnIndex = (room.turnIndex + 1) % room.players.length;
+
+    io.to(roomId).emit('dice_rolled', {
+      player: currentPlayer.name,
+      diceValue: diceValue,
+      players: room.players,
+      turnPlayer: room.players[room.turnIndex].name,
+      eventData: eventData
+    });
   });
 
-  // Event saat pemain klik tombol PASS
-  socket.on('pass_action', ({ roomId, player }) => {
-    const randomPunishment = punishments[Math.floor(Math.random() * punishments.length)];
-    const payload = {
-      player: player,
-      type: "HUKUMAN / PASS 🙈",
-      category: "Kena Hukuman!",
-      text: randomPunishment
-    };
-    io.to(roomId).emit('card_drawn', payload);
-  });
-
-  // Event menambah kartu rahasia buatan sendiri
-  socket.on('add_custom_card', ({ roomId, type, text, author }) => {
-    if (rooms[roomId]) {
-      rooms[roomId].customCards[type].push({
-        id: Date.now(),
-        category: `Rahasia dari ${author}`,
-        text: text
-      });
-      io.to(roomId).emit('custom_card_added', { author });
-    }
+  // Event Reaksi Emoji Real-Time
+  socket.on('send_emoji', ({ roomId, emoji, player }) => {
+    io.to(roomId).emit('receive_emoji', { emoji, player });
   });
 
   socket.on('disconnect', () => {
