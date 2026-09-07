@@ -7,10 +7,7 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
   transports: ['websocket', 'polling'],
   maxHttpBufferSize: 1e8
 });
@@ -38,8 +35,6 @@ function getRandomCard(type) {
 }
 
 io.on('connection', (socket) => {
-  console.log('User terhubung:', socket.id);
-
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace }) => {
     socket.join(roomId);
 
@@ -47,7 +42,8 @@ io.on('connection', (socket) => {
       rooms[roomId] = { 
         players: [],
         turnIndex: 0,
-        isStarted: false
+        isStarted: false,
+        stats: { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 }
       };
     }
 
@@ -77,6 +73,7 @@ io.on('connection', (socket) => {
     }
 
     io.sockets.in(roomId).emit('room_data', rooms[roomId]);
+    io.sockets.in(roomId).emit('player_status', { type: 'join', name: validName });
   });
 
   socket.on('roll_dice', ({ roomId, player }) => {
@@ -86,6 +83,7 @@ io.on('connection', (socket) => {
     const currentPlayer = room.players[room.turnIndex];
     if (!currentPlayer || currentPlayer.name !== player) return;
 
+    room.stats.totalRolls++;
     const diceValue = Math.floor(Math.random() * 6) + 1;
     let newPos = currentPlayer.position + diceValue;
     if (newPos > 30) newPos = 30;
@@ -97,9 +95,11 @@ io.on('connection', (socket) => {
       const randomVoucher = vouchers[Math.floor(Math.random() * vouchers.length)];
       winnerData = {
         winnerName: currentPlayer.name,
-        voucher: randomVoucher
+        voucher: randomVoucher,
+        stats: room.stats
       };
     } else if (ladders[newPos]) {
+      room.stats.laddersHit++;
       const targetPos = ladders[newPos];
       eventData = {
         targetPlayer: currentPlayer.name,
@@ -110,6 +110,7 @@ io.on('connection', (socket) => {
       };
       newPos = targetPos;
     } else if (snakes[newPos]) {
+      room.stats.snakesHit++;
       const targetPos = snakes[newPos];
       eventData = {
         targetPlayer: currentPlayer.name,
@@ -120,6 +121,7 @@ io.on('connection', (socket) => {
       };
       newPos = targetPos;
     } else if (todTiles.includes(newPos)) {
+      room.stats.todHit++;
       const type = Math.random() < 0.5 ? 'truth' : 'dare';
       const card = getRandomCard(type);
       eventData = {
@@ -144,6 +146,21 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('rematch_game', ({ roomId }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    room.players.forEach(p => p.position = 1);
+    room.turnIndex = 0;
+    room.stats = { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 };
+
+    io.sockets.in(roomId).emit('game_reset', room);
+  });
+
+  socket.on('toggle_bgm', ({ roomId, isPlaying }) => {
+    io.sockets.in(roomId).emit('sync_bgm', { isPlaying });
+  });
+
   socket.on('send_emoji', ({ roomId, emoji, player }) => {
     io.sockets.in(roomId).emit('receive_emoji', { emoji, player });
   });
@@ -152,8 +169,15 @@ io.on('connection', (socket) => {
     io.sockets.in(roomId).emit('receive_quick_chat', { message, player });
   });
 
-  socket.on('disconnect', () => {
-    console.log('User terputus:', socket.id);
+  socket.on('disconnecting', () => {
+    for (const roomId of socket.rooms) {
+      if (rooms[roomId]) {
+        const disconnectedPlayer = rooms[roomId].players.find(p => p.id === socket.id);
+        if (disconnectedPlayer) {
+          io.sockets.in(roomId).emit('player_status', { type: 'disconnect', name: disconnectedPlayer.name });
+        }
+      }
+    }
   });
 });
 
