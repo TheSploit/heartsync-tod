@@ -8,14 +8,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden">
 
+  <!-- Container Reaksi Emoji & Chat Melayang -->
   <div id="emoji-container" class="fixed inset-0 pointer-events-none z-50"></div>
+
+  <!-- Tombol Toggle BGM -->
+  <button onclick="toggleBGM()" id="bgm-btn" class="fixed top-4 right-4 z-50 bg-white/80 backdrop-blur-md border border-rose-200 p-2.5 rounded-full shadow-lg text-rose-500 hover:bg-rose-50 transition-all active:scale-90" title="Musik Latar">
+    <i id="bgm-icon" class="fa-solid fa-music"></i>
+  </button>
 
   <div class="w-full max-w-md md:max-w-6xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-rose-200/50 p-4 md:p-8 transition-all duration-300 relative z-10">
     
+    <!-- Header -->
     <div class="text-center mb-4 md:mb-6">
       <h1 class="text-2xl md:text-4xl font-extrabold text-rose-600 tracking-tight flex items-center justify-center gap-2">
         HeartSync <i class="fa-solid fa-heart animate-pulse text-rose-500"></i>
@@ -27,13 +35,13 @@
     <div id="login-sec" class="space-y-4 my-2 max-w-md mx-auto">
       <div>
         <label class="block text-xs font-bold text-gray-600 mb-1">NAMA KAMU</label>
-        <input type="text" id="username" placeholder="Masukkin nama kamu di sini ya bubub" 
+        <input type="text" id="username" placeholder="misal: Ayang" 
           class="w-full px-4 py-2.5 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm">
       </div>
 
       <div>
         <label class="block text-xs font-bold text-gray-600 mb-1">KODE ROOM</label>
-        <input type="text" id="room-id" placeholder="Nah disini masukkin kode roomnya, harus sama yaaa dengan kode pasangan kamu hehe" 
+        <input type="text" id="room-id" placeholder="misal: KITA2026" 
           class="w-full px-4 py-2.5 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400 uppercase text-sm">
       </div>
 
@@ -78,6 +86,12 @@
       <p class="text-xs text-gray-500 leading-relaxed">
         Bagikan Kode Room <span id="waiting-room-code" class="font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md border border-rose-200"></span> ke pasanganmu agar bisa langsung main bareng!
       </p>
+
+      <button onclick="copyInviteLink()" 
+        class="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto">
+        <i class="fa-solid fa-copy"></i> Copy Link Undangan
+      </button>
+
       <div class="pt-2">
         <span class="text-xs font-bold text-rose-400 animate-pulse">
           <i class="fa-solid fa-spinner fa-spin mr-1"></i> Menghubungkan ke server...
@@ -125,13 +139,22 @@
             </button>
           </div>
 
+          <!-- Modul Reaksi & Gombalan Cepat -->
           <div class="bg-white p-3 rounded-2xl border border-rose-100 shadow-sm text-center space-y-2">
-            <span class="text-[10px] font-bold text-gray-400 uppercase block">Kirim Reaksi</span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase block">Reaksi & Chat Cepat</span>
+            
             <div class="flex justify-center gap-2">
               <button onclick="sendEmoji('❤️')" class="text-xl p-2 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all active:scale-90">❤️</button>
               <button onclick="sendEmoji('😂')" class="text-xl p-2 bg-amber-50 hover:bg-amber-100 rounded-xl transition-all active:scale-90">😂</button>
               <button onclick="sendEmoji('😭')" class="text-xl p-2 bg-sky-50 hover:bg-sky-100 rounded-xl transition-all active:scale-90">😭</button>
               <button onclick="sendEmoji('😡')" class="text-xl p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-all active:scale-90">😡</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5 pt-1">
+              <button onclick="sendQuickChat('Kangen! 💕')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Kangen! 💕</button>
+              <button onclick="sendQuickChat('Awas kamu! 😜')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Awas kamu! 😜</button>
+              <button onclick="sendQuickChat('Gombal mulu~ 😘')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Gombal mulu~ 😘</button>
+              <button onclick="sendQuickChat('Lama mikir 🥱')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Lama mikir 🥱</button>
             </div>
           </div>
         </div>
