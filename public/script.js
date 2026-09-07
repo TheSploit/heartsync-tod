@@ -1,4 +1,3 @@
-// Paksa koneksi langsung ke domain lokal Railway itu sendiri
 const socket = io({
   transports: ['websocket', 'polling']
 });
@@ -8,8 +7,71 @@ let currentPlayer = '';
 let currentTurnPlayer = '';
 let selectedBody = '🧸';
 let userFaceData = null;
+let isBGMPlaying = false;
+let bgmInterval = null;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomParam = urlParams.get('room');
+  if (roomParam) {
+    const roomInput = document.getElementById('room-id');
+    if (roomInput) {
+      roomInput.value = roomParam.toUpperCase();
+    }
+  }
+});
+
+function copyInviteLink() {
+  if (!currentRoom) return;
+  const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+  
+  navigator.clipboard.writeText(inviteUrl).then(() => {
+    showNotice(`Link Undangan (${currentRoom}) Berhasil Disalin! 💕`);
+  }).catch(() => {
+    showNotice(`Kode Room: ${currentRoom}`);
+  });
+}
+
+function toggleBGM() {
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  const bgmIcon = document.getElementById('bgm-icon');
+  
+  if (isBGMPlaying) {
+    clearInterval(bgmInterval);
+    isBGMPlaying = false;
+    bgmIcon.className = "fa-solid fa-music-slash";
+  } else {
+    isBGMPlaying = true;
+    bgmIcon.className = "fa-solid fa-music text-rose-600 animate-spin";
+    playBGMNotes();
+    bgmInterval = setInterval(playBGMNotes, 8000);
+  }
+}
+
+function playBGMNotes() {
+  if (!isBGMPlaying) return;
+  const notes = [261.63, 329.63, 392.00, 523.25, 440.00, 349.23, 329.63, 293.66];
+  notes.forEach((freq, idx) => {
+    setTimeout(() => {
+      if (!isBGMPlaying) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.8);
+    }, idx * 900);
+  });
+}
 
 function playSound(type) {
   if (audioCtx.state === 'suspended') {
@@ -102,7 +164,7 @@ function showNotice(text) {
   const notice = document.createElement('div');
   notice.id = 'turn-notice';
   notice.className = 'fixed top-12 left-1/2 -translate-x-1/2 bg-rose-500 text-white font-extrabold text-xs md:text-sm px-6 py-3 rounded-full shadow-2xl z-50 animate__animated animate__bounceIn flex items-center gap-2 border-2 border-white';
-  notice.innerHTML = `<span>🛑</span> <span>${text}</span>`;
+  notice.innerHTML = `<span>💌</span> <span>${text}</span>`;
 
   document.body.appendChild(notice);
 
@@ -215,6 +277,10 @@ function sendEmoji(emoji) {
   socket.emit('send_emoji', { roomId: currentRoom, emoji: emoji, player: currentPlayer });
 }
 
+function sendQuickChat(msg) {
+  socket.emit('send_quick_chat', { roomId: currentRoom, message: msg, player: currentPlayer });
+}
+
 function closeModal() {
   document.getElementById('event-modal').classList.add('hidden');
 }
@@ -232,6 +298,21 @@ socket.on('receive_emoji', (data) => {
   setTimeout(() => el.remove(), 2000);
 });
 
+socket.on('receive_quick_chat', (data) => {
+  const container = document.getElementById('emoji-container');
+  const el = document.createElement('div');
+  el.className = 'fixed bg-white/95 border-2 border-rose-300 text-rose-600 font-extrabold text-xs px-4 py-2 rounded-2xl shadow-xl animate__animated animate__bounceInUp';
+  el.style.left = `${Math.random() * 60 + 20}%`;
+  el.style.bottom = '30%';
+  el.innerHTML = `<span>${data.player}:</span> "${data.message}"`;
+
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.replace('animate__bounceInUp', 'animate__fadeOutUp');
+    setTimeout(() => el.remove(), 500);
+  }, 2500);
+});
+
 socket.on('dice_rolled', (data) => {
   document.getElementById('dice-view').innerText = data.diceValue;
   document.getElementById('dice-result-text').innerText = `${data.player} maju ${data.diceValue} langkah!`;
@@ -243,6 +324,9 @@ socket.on('dice_rolled', (data) => {
 
   if (data.winnerData) {
     playSound('win');
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
     setTimeout(() => {
       document.getElementById('winner-text').innerText = `${data.winnerData.winnerName} Berhasil Mencapai Petak 30 & Menang! 🎉`;
       document.getElementById('voucher-text').innerText = `"${data.winnerData.voucher}"`;
