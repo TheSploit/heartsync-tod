@@ -1,4 +1,6 @@
-const socket = io('https://industrious-courage-production.up.railway.app');
+const socket = io('https://industrious-courage-production.up.railway.app', {
+  transports: ['websocket', 'polling']
+});
 
 let currentRoom = '';
 let currentPlayer = '';
@@ -71,10 +73,21 @@ function handleImageUpload(event) {
   if (file) {
     const reader = new FileReader();
     reader.onload = function(e) {
-      userFaceData = e.target.result;
-      const previewFace = document.getElementById('preview-face');
-      previewFace.src = userFaceData;
-      previewFace.classList.remove('hidden');
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 100;
+        canvas.height = 100;
+        ctx.drawImage(img, 0, 0, 100, 100);
+        
+        userFaceData = canvas.toDataURL('image/jpeg', 0.6);
+        
+        const previewFace = document.getElementById('preview-face');
+        previewFace.src = userFaceData;
+        previewFace.classList.remove('hidden');
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }
@@ -256,8 +269,7 @@ socket.on('room_data', (data) => {
 
   document.getElementById('players-list').innerHTML = playersHtml || 'Menunggu...';
 
-  // Jika minimal 2 pemain sudah masuk ATAU status isStarted = true
-  if (data.isStarted || data.players.length >= 2) {
+  if (data.players.length >= 2 || data.isStarted) {
     document.getElementById('waiting-sec').classList.add('hidden');
     document.getElementById('game-sec').classList.remove('hidden');
     document.getElementById('room-display').innerText = currentRoom;
