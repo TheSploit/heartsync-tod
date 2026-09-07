@@ -256,7 +256,8 @@ socket.on('room_data', (data) => {
 
   document.getElementById('players-list').innerHTML = playersHtml || 'Menunggu...';
 
-  if (data.isStarted) {
+  // Jika minimal 2 pemain sudah masuk ATAU status isStarted = true
+  if (data.isStarted || data.players.length >= 2) {
     document.getElementById('waiting-sec').classList.add('hidden');
     document.getElementById('game-sec').classList.remove('hidden');
     document.getElementById('room-display').innerText = currentRoom;
