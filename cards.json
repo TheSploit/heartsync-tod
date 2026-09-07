@@ -2,45 +2,125 @@
   "truth": [
     {
       "id": 1,
-      "category": "Deep Talk",
-      "text": "Apa hal terkecil yang pernah aku lakukan yang bikin kamu merasa sangat dicintai?"
+      "text": "Sebutkan 1 momen paling manis pas kita pertama kali kenal/dekat yang bikin kamu senyum-senyum sendiri!"
     },
     {
       "id": 2,
-      "category": "Romantis",
-      "text": "Momen LDR mana yang paling bikin kamu kangen banget sama aku?"
+      "text": "Hal kecil apa dari aku yang paling sering bikin kamu kangen pas kita lagi ga kabar-kabaran?"
     },
     {
       "id": 3,
-      "category": "Fun",
-      "text": "Apa kebiasaan anehku yang sebenarnya bikin kamu gemas atau bingung?"
+      "text": "Apa kebiasaan anehku yang sebenarnya bikin kamu gemas atau makin sayang?"
     },
     {
       "id": 4,
-      "category": "Masa Depan",
-      "text": "Kalo kita nanti udah tinggal bareng, hal pertama apa yang pengen kamu lakuin bareng aku?"
+      "text": "Pas pertama kali kita ketemu/VC, kesan pertama kamu tentang aku itu apa sih?"
+    },
+    {
+      "id": 5,
+      "text": "Hal apa dari hubungan LDR kita yang paling bikin kamu bersyukur sampai saat ini?"
+    },
+    {
+      "id": 6,
+      "text": "Jujur, kapan terakhir kali kamu kangen banget sama aku sampai bingung mau ngapain?"
+    },
+    {
+      "id": 7,
+      "text": "Kalau kita punya waktu seharian full pas ketemu nanti, tempat mana yang paling pengen kamu kunjungi bareng aku?"
+    },
+    {
+      "id": 8,
+      "text": "Sebutkan 3 sifat utama dari aku yang paling bikin kamu yakin sama hubungan ini!"
+    },
+    {
+      "id": 9,
+      "text": "Apa lagu yang paling sering bikin kamu ingat sama aku pas lagi mendengarkannya?"
+    },
+    {
+      "id": 10,
+      "text": "Pernah ga kamu mimpiin aku? Kalau pernah, menceritakan tentang apa mimpinya?"
+    },
+    {
+      "id": 11,
+      "text": "Apa hal yang paling pengen kamu lakukan bareng aku pas nanti kita udah ga LDR lagi?"
+    },
+    {
+      "id": 12,
+      "text": "Kapan momen di mana kamu merasa paling disayang dan diperhatikan sama aku?"
+    },
+    {
+      "id": 13,
+      "text": "Apa pesan singkat (chat) dari aku yang paling sering kamu baca ulang pas lagi kangen?"
+    },
+    {
+      "id": 14,
+      "text": "Kalau aku lagi ngambek atau cuek, sebenarnya cara paling ampuh buat bikin kamu senyum lagi itu apa?"
+    },
+    {
+      "id": 15,
+      "text": "Sebutkan 1 foto kita/foto aku yang paling jadi favorit kamu sampai sekarang!"
     }
   ],
   "dare": [
     {
-      "id": 1,
-      "category": "Fun",
-      "text": "Kirim foto komuk (muka paling absurd) kamu sekarang juga via chat!"
+      "id": 101,
+      "text": "Kirim voice note atau ucapkan langsung gombalan paling maut kamu selama 10 detik!"
     },
     {
-      "id": 2,
-      "category": "Romantis",
-      "text": "Gombalin aku pakai gaya penyair selama 30 detik tanpa tertawa di video call/voice!"
+      "id": 102,
+      "text": "Tatap kamera/layar dan bilang 'Aku sayang banget sama kamu' dengan ekspresi paling manis!"
     },
     {
-      "id": 3,
-      "category": "Challenge",
-      "text": "Tirukan gaya bicara atau gaya marahku selama 1 menit ke depan!"
+      "id": 103,
+      "text": "Panggil pasanganmu dengan sebutan 'Yang Mulia' atau 'Pangeran/Putri' sampai 2 giliran ke depan!"
     },
     {
-      "id": 4,
-      "category": "Sweet",
-      "text": "Nyanyiin potongan lagu favorit kita berdua lewat voice note!"
+      "id": 104,
+      "text": "Nyanyikan potongan lagu romantis favorit kalian berdua selama 15 detik!"
+    },
+    {
+      "id": 105,
+      "text": "Tirukan ekspresi wajah bahagiamu pas pertama kali dapet paket/hadiah dari aku!"
+    },
+    {
+      "id": 106,
+      "text": "Kirim foto selfie dengan gaya paling gemas/imut kamu ke chat sekarang juga!"
+    },
+    {
+      "id": 107,
+      "text": "Puji 3 bagian wajah pasanganmu yang menurutmu paling manis!"
+    },
+    {
+      "id": 108,
+      "text": "Bikin janji manis spontan yang wajib kamu tepati pas kita ketemu nanti!"
+    },
+    {
+      "id": 109,
+      "text": "Peragakan gaya pasanganmu pas lagi kangen atau lagi manja ke kamu!"
+    },
+    {
+      "id": 110,
+      "text": "Beri tiupan ciuman (flying kiss) ke kamera 3 kali berturut-turut!"
+    },
+    {
+      "id": 111,
+      "text": "Ketik pesan romantis singkat lalu kirimkan ke WhatsApp pasanganmu detik ini juga!"
+    },
+    {
+      "id": 112,
+      "text": "Tunjukkan 1 barang di kamarmu yang punya kenangan atau mengingatkan kamu sama aku!"
+    },
+    {
+      "id": 113,
+      "text": "Janji bakal turutin 1 permintaan kecil dari pasanganmu setelah game ini selesai!"
+    },
+    {
+      "id": 114,
+      "text": "Tatap mata pasanganmu di layar tanpa kedip selama 10 detik!"
+    },
+    {
+      "id": 115,
+      "text": "Bisikkan kata 'Kangen' dengan nada paling lembut ke mikrofon!"
     }
   ]
 }
