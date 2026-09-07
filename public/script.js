@@ -1,4 +1,5 @@
-const socket = io('https://industrious-courage-production.up.railway.app', {
+// Paksa koneksi langsung ke domain lokal Railway itu sendiri
+const socket = io({
   transports: ['websocket', 'polling']
 });
 
