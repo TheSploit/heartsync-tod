@@ -2,6 +2,7 @@ const socket = io('https://industrious-courage-production.up.railway.app');
 
 let currentRoom = '';
 let currentPlayer = '';
+let currentTurnPlayer = '';
 let selectedBody = '🧸';
 let userFaceData = null;
 
@@ -49,6 +50,14 @@ function playSound(type) {
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
     osc.start();
     osc.stop(audioCtx.currentTime + 0.5);
+  } else if (type === 'warning') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(100, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
   }
 }
 
@@ -69,6 +78,24 @@ function handleImageUpload(event) {
     };
     reader.readAsDataURL(file);
   }
+}
+
+function showNotice(text) {
+  playSound('warning');
+  const existingNotice = document.getElementById('turn-notice');
+  if (existingNotice) existingNotice.remove();
+
+  const notice = document.createElement('div');
+  notice.id = 'turn-notice';
+  notice.className = 'fixed top-12 left-1/2 -translate-x-1/2 bg-rose-500 text-white font-extrabold text-xs md:text-sm px-6 py-3 rounded-full shadow-2xl z-50 animate__animated animate__bounceIn flex items-center gap-2 border-2 border-white';
+  notice.innerHTML = `<span>🛑</span> <span>${text}</span>`;
+
+  document.body.appendChild(notice);
+
+  setTimeout(() => {
+    notice.classList.replace('animate__bounceIn', 'animate__bounceOut');
+    setTimeout(() => notice.remove(), 500);
+  }, 2000);
 }
 
 function renderBoard() {
@@ -155,6 +182,17 @@ function joinRoom() {
 }
 
 function rollDice() {
+  if (currentTurnPlayer && currentTurnPlayer !== currentPlayer) {
+    const messages = [
+      `Eits, sabar ya manis! Lagi giliran ${currentTurnPlayer} nih~ 😘`,
+      `Jangan curang dong! Tunggu ${currentTurnPlayer} lempar dadu dulu 😜`,
+      `Sabar ya sayang! Gantian dulu sama ${currentTurnPlayer} 💕`
+    ];
+    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    showNotice(randomMsg);
+    return;
+  }
+
   playSound('dice');
   socket.emit('roll_dice', { roomId: currentRoom, player: currentPlayer });
 }
@@ -185,8 +223,7 @@ socket.on('dice_rolled', (data) => {
   document.getElementById('dice-result-text').innerText = `${data.player} maju ${data.diceValue} langkah!`;
   document.getElementById('turn-display').innerText = data.turnPlayer;
 
-  const isMyTurn = data.turnPlayer === currentPlayer;
-  document.getElementById('roll-btn').disabled = !isMyTurn;
+  currentTurnPlayer = data.turnPlayer;
 
   updatePawns(data.players);
 
@@ -225,9 +262,8 @@ socket.on('room_data', (data) => {
     document.getElementById('room-display').innerText = currentRoom;
     renderBoard();
 
-    const turnPlayer = data.players[data.turnIndex].name;
-    document.getElementById('turn-display').innerText = turnPlayer;
-    document.getElementById('roll-btn').disabled = turnPlayer !== currentPlayer;
+    currentTurnPlayer = data.players[data.turnIndex].name;
+    document.getElementById('turn-display').innerText = currentTurnPlayer;
     updatePawns(data.players);
   }
 });
