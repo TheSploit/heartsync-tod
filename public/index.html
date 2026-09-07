@@ -3,117 +3,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HeartSync 💕 - ToD LDR Edition</title>
+  <title>HeartSync 💕 - Ular Tangga LDR</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden">
 
-  <div class="w-full max-w-md bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl border border-rose-200/50 p-6 transition-all duration-300">
+  <!-- Container Reaksi Emoji Melayang -->
+  <div id="emoji-container" class="fixed inset-0 pointer-events-none z-50"></div>
+
+  <div class="w-full max-w-md md:max-w-6xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-rose-200/50 p-4 md:p-8 transition-all duration-300 relative z-10">
     
     <!-- Header -->
-    <div class="text-center mb-6">
-      <h1 class="text-3xl font-extrabold text-rose-600 tracking-tight flex items-center justify-center gap-2">
+    <div class="text-center mb-4 md:mb-6">
+      <h1 class="text-2xl md:text-4xl font-extrabold text-rose-600 tracking-tight flex items-center justify-center gap-2">
         HeartSync <i class="fa-solid fa-heart animate-pulse text-rose-500"></i>
       </h1>
-      <p class="text-xs text-rose-400 font-medium mt-1">Truth or Dare for Distance Lovers</p>
+      <p class="text-xs md:text-sm text-rose-400 font-medium">LDR Snakes & Ladders Edition</p>
     </div>
 
-    <!-- Section 1: Join Room -->
-    <div id="login-sec" class="space-y-4">
+    <!-- Section 1: Join Room & Custom Avatar -->
+    <div id="login-sec" class="space-y-4 my-2 max-w-md mx-auto">
       <div>
         <label class="block text-xs font-bold text-gray-600 mb-1">NAMA KAMU</label>
         <input type="text" id="username" placeholder="misal: Ayang" 
-          class="w-full px-4 py-3 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400">
+          class="w-full px-4 py-2.5 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm">
       </div>
+
       <div>
         <label class="block text-xs font-bold text-gray-600 mb-1">KODE ROOM</label>
         <input type="text" id="room-id" placeholder="misal: KITA2026" 
-          class="w-full px-4 py-3 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400 uppercase">
+          class="w-full px-4 py-2.5 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400 uppercase text-sm">
       </div>
+
+      <div class="bg-rose-50/80 p-3.5 rounded-2xl border border-rose-200 space-y-3">
+        <label class="block text-xs font-bold text-rose-500 text-center uppercase tracking-wider">
+          <i class="fa-solid fa-user-gear mr-1"></i> Bikin Avatar Lucu Kamu
+        </label>
+        
+        <div class="flex justify-center items-center gap-3">
+          <div class="relative w-16 h-16 rounded-full bg-white border-2 border-rose-300 shadow flex items-center justify-center overflow-hidden">
+            <span id="preview-body" class="text-3xl">🧸</span>
+            <img id="preview-face" class="absolute top-1 w-8 h-8 rounded-full object-cover border border-white shadow-sm hidden" />
+          </div>
+        </div>
+
+        <div class="flex justify-center gap-2">
+          <button type="button" onclick="selectBody('🧸')" class="px-3 py-1 bg-white border rounded-lg text-sm">🧸</button>
+          <button type="button" onclick="selectBody('🐱')" class="px-3 py-1 bg-white border rounded-lg text-sm">🐱</button>
+          <button type="button" onclick="selectBody('🐰')" class="px-3 py-1 bg-white border rounded-lg text-sm">🐰</button>
+          <button type="button" onclick="selectBody('🐸')" class="px-3 py-1 bg-white border rounded-lg text-sm">🐸</button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 text-center mb-1">UPLOAD FOTO WAJAH (OPSIONAL)</label>
+          <input type="file" id="face-input" accept="image/*" onchange="handleImageUpload(event)"
+            class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 cursor-pointer">
+        </div>
+      </div>
+
       <button onclick="joinRoom()" 
-        class="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl shadow-lg shadow-rose-300 transition-all active:scale-95">
-        Masuk Arena <i class="fa-solid fa-arrow-right ml-1"></i>
+        class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl shadow-lg shadow-rose-300 transition-all active:scale-95 text-sm">
+        Masuk Room <i class="fa-solid fa-arrow-right ml-1"></i>
       </button>
     </div>
 
-    <!-- Section 2: Game Area -->
-    <div id="game-sec" class="hidden space-y-4">
+    <!-- Section 2: Waiting Room -->
+    <div id="waiting-sec" class="hidden text-center py-8 space-y-4 max-w-md mx-auto animate__animated animate__fadeIn">
+      <div class="w-20 h-20 mx-auto bg-rose-100 rounded-full flex items-center justify-center border-2 border-rose-300 text-3xl animate-bounce">
+        ⏳
+      </div>
+      <h2 class="text-xl font-extrabold text-rose-600">Menunggu Pasangan Bergabung...</h2>
+      <p class="text-xs text-gray-500 leading-relaxed">
+        Bagikan Kode Room <span id="waiting-room-code" class="font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md border border-rose-200"></span> ke pasanganmu agar bisa langsung main bareng!
+      </p>
+      <div class="pt-2">
+        <span class="text-xs font-bold text-rose-400 animate-pulse">
+          <i class="fa-solid fa-spinner fa-spin mr-1"></i> Menghubungkan ke server...
+        </span>
+      </div>
+    </div>
+
+    <!-- Section 3: Game Area -->
+    <div id="game-sec" class="hidden space-y-4 animate__animated animate__fadeIn">
       
-      <!-- Info Room -->
-      <div class="flex items-center justify-between bg-rose-50/80 p-3 rounded-2xl border border-rose-100">
+      <div class="flex items-center justify-between bg-rose-50/80 p-3 md:p-4 rounded-2xl border border-rose-100 text-xs md:text-sm">
         <div>
-          <span class="text-[10px] font-bold text-rose-400 uppercase block">KODE ROOM</span>
-          <span id="room-display" class="font-bold text-gray-800 text-sm"></span>
+          <span class="text-[9px] md:text-xs font-bold text-rose-400 uppercase block">ROOM</span>
+          <span id="room-display" class="font-bold text-gray-800"></span>
+        </div>
+        <div class="text-center">
+          <span class="text-[9px] md:text-xs font-bold text-rose-400 uppercase block">GILIRAN</span>
+          <span id="turn-display" class="font-extrabold text-rose-600">Menunggu...</span>
         </div>
         <div class="text-right">
-          <span class="text-[10px] font-bold text-rose-400 uppercase block">PEMAIN</span>
-          <span id="players-list" class="text-xs font-medium text-gray-600"></span>
+          <span class="text-[9px] md:text-xs font-bold text-rose-400 uppercase block">PEMAIN</span>
+          <span id="players-list" class="font-medium text-gray-600 flex items-center justify-end gap-2"></span>
         </div>
       </div>
 
-      <!-- Display Kartu ToD -->
-      <div id="card-wrapper" class="relative">
-        <div id="card-box" class="w-full min-h-[220px] bg-gradient-to-br from-white to-rose-50/60 rounded-2xl border-2 border-rose-200 p-6 flex flex-col justify-between items-center text-center shadow-lg transition-all duration-300">
-          
-          <span id="card-category" class="px-3 py-1 bg-rose-100 text-rose-600 text-[11px] font-extrabold rounded-full uppercase">
-            [Siap Main?]
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-start">
+        <div id="board" class="md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-rose-100/60 rounded-2xl border-2 border-rose-200 relative">
+        </div>
+
+        <div class="space-y-3">
+          <!-- Panel Dadu -->
+          <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm text-center space-y-3">
+            <span class="text-xs font-bold text-gray-400 block uppercase">Dadu Interaktif</span>
+            
+            <div id="dice-view" class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-rose-500 text-white font-black text-3xl md:text-4xl rounded-2xl flex items-center justify-center shadow-md border-2 border-rose-300">
+              🎲
+            </div>
+
+            <div>
+              <span id="dice-result-text" class="text-xs md:text-sm font-bold text-gray-700 block mt-1">Gilirannya dimainkan!</span>
+            </div>
+
+            <button onclick="rollDice()" id="roll-btn" 
+              class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-md hover:from-rose-600 hover:to-pink-600 transition-all active:scale-95 disabled:opacity-50">
+              KOCOK DADU
+            </button>
+          </div>
+
+          <!-- Panel Tombol Reaksi Emoji Real-Time -->
+          <div class="bg-white p-3 rounded-2xl border border-rose-100 shadow-sm text-center space-y-2">
+            <span class="text-[10px] font-bold text-gray-400 uppercase block">Kirim Reaksi</span>
+            <div class="flex justify-center gap-2">
+              <button onclick="sendEmoji('❤️')" class="text-xl p-2 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all active:scale-90">❤️</button>
+              <button onclick="sendEmoji('😂')" class="text-xl p-2 bg-amber-50 hover:bg-amber-100 rounded-xl transition-all active:scale-90">😂</button>
+              <button onclick="sendEmoji('😭')" class="text-xl p-2 bg-sky-50 hover:bg-sky-100 rounded-xl transition-all active:scale-90">😭</button>
+              <button onclick="sendEmoji('😡')" class="text-xl p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-all active:scale-90">😡</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pop-up Event Modal -->
+      <div id="event-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 border-2 border-rose-300 shadow-2xl animate__animated animate__zoomIn">
+          <span id="event-badge" class="px-3 py-1 bg-rose-100 text-rose-600 text-xs font-extrabold rounded-full uppercase">
+            EVENT
           </span>
-
-          <div class="my-3">
-            <h3 id="card-title" class="text-sm font-semibold text-gray-400 mb-1">Pilih giliranmu!</h3>
-            <p id="card-text" class="text-gray-800 font-medium leading-relaxed italic text-base">
-              "Klik TRUTH atau DARE di bawah buat ambil kartu!"
-            </p>
-          </div>
-
-          <div class="w-full border-t border-rose-100 pt-2">
-            <span id="card-player" class="text-[11px] font-semibold text-rose-400">
-              <i class="fa-solid fa-sparkles mr-1"></i> HeartSync Interactive
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tombol Aksi Utama -->
-      <div class="grid grid-cols-2 gap-3 pt-1">
-        <button onclick="sendChoice('Truth')" 
-          class="py-3 px-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl shadow-md shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-scroll"></i> TRUTH
-        </button>
-        <button onclick="sendChoice('Dare')" 
-          class="py-3 px-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-md shadow-rose-200 transition-all active:scale-95 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-fire"></i> DARE
-        </button>
-      </div>
-
-      <!-- Tombol Pass / menyerah -->
-      <button onclick="triggerPass()" 
-        class="w-full py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold rounded-xl border border-amber-300 text-xs transition-all active:scale-95 flex items-center justify-center gap-1">
-        <i class="fa-solid fa-flag"></i> Ga Berani? (PASS / Hukuman)
-      </button>
-
-      <!-- Panel Tambah Kartu Rahasia (Custom Deck) -->
-      <div class="pt-3 border-t border-rose-200/60">
-        <button onclick="toggleCustomForm()" class="text-xs font-bold text-rose-500 hover:underline flex items-center gap-1 mx-auto">
-          <i class="fa-solid fa-plus-circle"></i> Tambah Kartu Rahasia Kamu
-        </button>
-
-        <div id="custom-form" class="hidden mt-3 p-3 bg-white/90 rounded-2xl border border-rose-200 space-y-2">
-          <div class="flex gap-2">
-            <select id="custom-type" class="text-xs p-2 rounded-lg bg-rose-50 border border-rose-200 text-gray-700 font-bold">
-              <option value="truth">TRUTH</option>
-              <option value="dare">DARE</option>
-            </select>
-            <input type="text" id="custom-text" placeholder="Tulis pertanyaan/tantangan rahasia..." 
-              class="w-full text-xs p-2 rounded-lg bg-rose-50 border border-rose-200 text-gray-700 focus:outline-none">
-          </div>
-          <button onclick="addCustomCard()" 
-            class="w-full py-2 bg-rose-500 text-white font-bold text-xs rounded-lg shadow hover:bg-rose-600 transition-all">
-            Simpan Kartu Rahasia
+          <h3 id="event-title" class="text-base font-extrabold text-gray-800"></h3>
+          <p id="event-text" class="text-xs md:text-sm text-gray-600 italic leading-relaxed"></p>
+          <button onclick="closeModal()" 
+            class="w-full py-2.5 bg-rose-500 text-white font-bold text-xs md:text-sm rounded-xl shadow hover:bg-rose-600 transition-all">
+            Lanjutkan Permainan
           </button>
         </div>
       </div>
