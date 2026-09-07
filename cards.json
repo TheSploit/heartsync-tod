@@ -1,0 +1,46 @@
+{
+  "truth": [
+    {
+      "id": 1,
+      "category": "Deep Talk",
+      "text": "Apa hal terkecil yang pernah aku lakukan yang bikin kamu merasa sangat dicintai?"
+    },
+    {
+      "id": 2,
+      "category": "Romantis",
+      "text": "Momen LDR mana yang paling bikin kamu kangen banget sama aku?"
+    },
+    {
+      "id": 3,
+      "category": "Fun",
+      "text": "Apa kebiasaan anehku yang sebenarnya bikin kamu gemas atau bingung?"
+    },
+    {
+      "id": 4,
+      "category": "Masa Depan",
+      "text": "Kalo kita nanti udah tinggal bareng, hal pertama apa yang pengen kamu lakuin bareng aku?"
+    }
+  ],
+  "dare": [
+    {
+      "id": 1,
+      "category": "Fun",
+      "text": "Kirim foto komuk (muka paling absurd) kamu sekarang juga via chat!"
+    },
+    {
+      "id": 2,
+      "category": "Romantis",
+      "text": "Gombalin aku pakai gaya penyair selama 30 detik tanpa tertawa di video call/voice!"
+    },
+    {
+      "id": 3,
+      "category": "Challenge",
+      "text": "Tirukan gaya bicara atau gaya marahku selama 1 menit ke depan!"
+    },
+    {
+      "id": 4,
+      "category": "Sweet",
+      "text": "Nyanyiin potongan lagu favorit kita berdua lewat voice note!"
+    }
+  ]
+}
