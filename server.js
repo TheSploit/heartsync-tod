@@ -35,7 +35,6 @@ function getRandomCard(type) {
   return cardList[Math.floor(Math.random() * cardList.length)];
 }
 
-// Auto-cleanup background setiap 10 menit
 setInterval(() => {
   const now = Date.now();
   for (const roomId in rooms) {
@@ -46,6 +45,7 @@ setInterval(() => {
   }
 }, 600000);
 
+// SEMUA EVENT SOCKET HARUS ADA DI DALAM SINI
 io.on('connection', (socket) => {
 
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace, memoryPhotos }) => {
@@ -65,6 +65,7 @@ io.on('connection', (socket) => {
         theme: 'rose',
         lastActive: Date.now(),
         photos: [],
+        syncHolds: {},
         stats: { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 }
       };
     }
@@ -72,7 +73,6 @@ io.on('connection', (socket) => {
     const currentRoom = rooms[cleanRoomId];
     currentRoom.lastActive = Date.now();
 
-    // 1. BATASI MAKSIMAL 2 PEMAIN
     const existingPlayer = currentRoom.players.find(p => p.id === socket.id);
     if (!existingPlayer && currentRoom.players.length >= 2) {
       socket.emit('error_message', { 
@@ -81,7 +81,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // 2. CEK AVATAR UNIK
     const requestedBody = avatarBody || '🧸';
     const isAvatarTaken = currentRoom.players.some(p => p.id !== socket.id && p.body === requestedBody);
     if (isAvatarTaken) {
@@ -101,13 +100,15 @@ io.on('connection', (socket) => {
       existingPlayer.name = cleanName;
       existingPlayer.body = requestedBody;
       existingPlayer.face = avatarFace || null;
+      existingPlayer.peerId = socket.id;
     } else {
       currentRoom.players.push({ 
         id: socket.id, 
         name: cleanName,
         position: 1,
         body: requestedBody,
-        face: avatarFace || null
+        face: avatarFace || null,
+        peerId: socket.id
       });
     }
 
@@ -204,6 +205,34 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Heartbeat Sync Handlers
+  socket.on('trigger_sync_test', ({ roomId, player }) => {
+    if (rooms[roomId]) {
+      rooms[roomId].syncHolds = {};
+      io.sockets.in(roomId).emit('open_sync_modal', { player });
+    }
+  });
+
+  socket.on('heartbeat_hold_start', ({ roomId, player }) => {
+    const room = rooms[roomId];
+    if (room) {
+      room.syncHolds[player] = true;
+      const keys = Object.keys(room.syncHolds);
+      if (keys.length >= 2 && keys.every(k => room.syncHolds[k] === true)) {
+        io.sockets.in(roomId).emit('sync_success');
+        room.syncHolds = {};
+      }
+    }
+  });
+
+  socket.on('heartbeat_hold_stop', ({ roomId, player }) => {
+    const room = rooms[roomId];
+    if (room && room.syncHolds) {
+      delete room.syncHolds[player];
+      io.sockets.in(roomId).emit('sync_cancel');
+    }
+  });
+
   socket.on('change_theme', ({ roomId, theme }) => {
     if (rooms[roomId]) {
       rooms[roomId].theme = theme;
@@ -243,7 +272,6 @@ io.on('connection', (socket) => {
     io.sockets.in(roomId).emit('receive_voice', { audioData, player });
   });
 
-  // 3. LOGIKA DISCONNECT & AUTO CLEANUP INSTAN
   socket.on('disconnecting', () => {
     for (const roomId of socket.rooms) {
       if (rooms[roomId]) {
@@ -251,7 +279,6 @@ io.on('connection', (socket) => {
         const leavingPlayer = room.players.find(p => p.id === socket.id);
 
         if (leavingPlayer) {
-          // Hapus pemain dari list room
           room.players = room.players.filter(p => p.id !== socket.id);
 
           io.sockets.in(roomId).emit('player_status', { 
@@ -259,12 +286,10 @@ io.on('connection', (socket) => {
             name: leavingPlayer.name 
           });
 
-          // Jika room jadi kosong, langsung hapus room detik itu juga!
           if (room.players.length === 0) {
             delete rooms[roomId];
             console.log(`[Instant-Cleanup] Room ${roomId} dihapus karena semua pemain keluar.`);
           } else {
-            // Reset giliran jika perlu
             room.turnIndex = 0;
             room.isStarted = false;
             io.sockets.in(roomId).emit('room_data', room);
@@ -273,56 +298,57 @@ io.on('connection', (socket) => {
       }
     }
   });
-});
 
-// DEVELOPER DASHBOARD HANDLERS
-socket.on('dev_get_rooms', ({ pin }) => {
-  const DEV_PIN = process.env.DEV_PIN || "123456"; 
-  if (pin !== DEV_PIN) {
-    socket.emit('dev_error', { message: "PIN Developer Salah!" });
-    return;
-  }
+  // DEVELOPER DASHBOARD HANDLERS (SEKARANG SUDAH DI DALAM IO.ON CONNECTION)
+  socket.on('dev_get_rooms', ({ pin }) => {
+    const DEV_PIN = process.env.DEV_PIN || "123456"; 
+    if (pin !== DEV_PIN) {
+      socket.emit('dev_error', { message: "PIN Developer Salah!" });
+      return;
+    }
 
-  const roomDetails = [];
-  const memoryUsage = process.memoryUsage();
+    const roomDetails = [];
+    const memoryUsage = process.memoryUsage();
 
-  for (const roomId in rooms) {
-    const r = rooms[roomId];
-    roomDetails.push({
-      roomId: roomId,
-      playerCount: r.players.length,
-      players: r.players.map(p => ({
-        name: p.name,
-        position: p.position,
-        body: p.body,
-        hasFace: !!p.face
-      })),
-      isStarted: r.isStarted,
-      theme: r.theme,
-      turnPlayer: r.players[r.turnIndex] ? r.players[r.turnIndex].name : '-',
-      photoCount: r.photos ? r.photos.length : 0,
-      lastActive: new Date(r.lastActive).toLocaleTimeString('id-ID'),
-      stats: r.stats
+    for (const roomId in rooms) {
+      const r = rooms[roomId];
+      roomDetails.push({
+        roomId: roomId,
+        playerCount: r.players.length,
+        players: r.players.map(p => ({
+          name: p.name,
+          position: p.position,
+          body: p.body,
+          hasFace: !!p.face
+        })),
+        isStarted: r.isStarted,
+        theme: r.theme,
+        turnPlayer: r.players[r.turnIndex] ? r.players[r.turnIndex].name : '-',
+        photoCount: r.photos ? r.photos.length : 0,
+        lastActive: new Date(r.lastActive).toLocaleTimeString('id-ID'),
+        stats: r.stats
+      });
+    }
+
+    socket.emit('dev_rooms_data', {
+      totalRooms: Object.keys(rooms).length,
+      totalPlayers: roomDetails.reduce((sum, r) => sum + r.playerCount, 0),
+      memoryUsageMB: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2),
+      uptimeSeconds: Math.floor(process.uptime()),
+      rooms: roomDetails
     });
-  }
-
-  socket.emit('dev_rooms_data', {
-    totalRooms: Object.keys(rooms).length,
-    totalPlayers: roomDetails.reduce((sum, r) => sum + r.playerCount, 0),
-    memoryUsageMB: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2),
-    uptimeSeconds: Math.floor(process.uptime()),
-    rooms: roomDetails
   });
-});
 
-socket.on('dev_force_delete_room', ({ roomId, pin }) => {
-  const DEV_PIN = process.env.DEV_PIN || "123456";
-  if (pin === DEV_PIN && rooms[roomId]) {
-    delete rooms[roomId];
-    io.sockets.in(roomId).emit('player_status', { type: 'disconnect', name: 'ADMIN (Room Ditutup)' });
-    socket.emit('dev_notice', { message: `Room ${roomId} berhasil dihapus!` });
-  }
-});
+  socket.on('dev_force_delete_room', ({ roomId, pin }) => {
+    const DEV_PIN = process.env.DEV_PIN || "123456";
+    if (pin === DEV_PIN && rooms[roomId]) {
+      delete rooms[roomId];
+      io.sockets.in(roomId).emit('player_status', { type: 'disconnect', name: 'ADMIN (Room Ditutup)' });
+      socket.emit('dev_notice', { message: `Room ${roomId} berhasil dihapus!` });
+    }
+  });
+
+}); // BATAS PENUTUP CONNECTION SOCKET
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
