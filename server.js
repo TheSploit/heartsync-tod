@@ -35,11 +35,7 @@ function getRandomCard(type) {
 }
 
 io.on('connection', (socket) => {
-  console.log('User terhubung:', socket.id);
-
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace }) => {
-    socket.join(roomId);
-
     if (!rooms[roomId]) {
       rooms[roomId] = { 
         players: [],
@@ -49,32 +45,45 @@ io.on('connection', (socket) => {
       };
     }
 
-    const validName = playerName || `Pemain ${rooms[roomId].players.length + 1}`;
+    const currentRoom = rooms[roomId];
+    const requestedBody = avatarBody || '🧸';
 
-    const existingIndex = rooms[roomId].players.findIndex(p => p.id === socket.id);
+    // Validasi: Cek apakah avatar body sudah dipakai pemain lain di room ini
+    const isAvatarTaken = currentRoom.players.some(p => p.id !== socket.id && p.body === requestedBody);
+    if (isAvatarTaken) {
+      socket.emit('error_message', { 
+        message: `Avatar ${requestedBody} sudah dipakai pasanganmu! Pilih karakter avatar lain ya 😉` 
+      });
+      return;
+    }
+
+    socket.join(roomId);
+    const validName = playerName || `Pemain ${currentRoom.players.length + 1}`;
+
+    const existingIndex = currentRoom.players.findIndex(p => p.id === socket.id);
     if (existingIndex !== -1) {
-      rooms[roomId].players[existingIndex] = {
+      currentRoom.players[existingIndex] = {
         id: socket.id,
         name: validName,
-        position: rooms[roomId].players[existingIndex].position || 1,
-        body: avatarBody || '🧸',
+        position: currentRoom.players[existingIndex].position || 1,
+        body: requestedBody,
         face: avatarFace || null
       };
     } else {
-      rooms[roomId].players.push({ 
+      currentRoom.players.push({ 
         id: socket.id, 
         name: validName,
         position: 1,
-        body: avatarBody || '🧸',
+        body: requestedBody,
         face: avatarFace || null
       });
     }
 
-    if (rooms[roomId].players.length >= 2) {
-      rooms[roomId].isStarted = true;
+    if (currentRoom.players.length >= 2) {
+      currentRoom.isStarted = true;
     }
 
-    io.sockets.in(roomId).emit('room_data', rooms[roomId]);
+    io.sockets.in(roomId).emit('room_data', currentRoom);
     io.sockets.in(roomId).emit('player_status', { type: 'join', name: validName });
   });
 
