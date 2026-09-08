@@ -24,6 +24,14 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+function closeHint(hintId) {
+  const el = document.getElementById(hintId);
+  if (el) {
+    el.classList.replace('animate__bounceIn', 'animate__fadeOut');
+    setTimeout(() => el.remove(), 300);
+  }
+}
+
 function copyInviteLink() {
   if (!currentRoom) return;
   const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
@@ -242,10 +250,8 @@ function joinRoom() {
       avatarBody: selectedBody,
       avatarFace: userFaceData
     });
-
-    document.getElementById('login-sec').classList.add('hidden');
-    document.getElementById('waiting-sec').classList.remove('hidden');
-    document.getElementById('waiting-room-code').innerText = roomInput;
+  } else {
+    showNotice("Isi kode room dulu ya!");
   }
 }
 
@@ -281,6 +287,10 @@ function sendQuickChat(msg) {
 function closeModal() {
   document.getElementById('event-modal').classList.add('hidden');
 }
+
+socket.on('error_message', (data) => {
+  showNotice(data.message);
+});
 
 socket.on('receive_emoji', (data) => {
   const container = document.getElementById('emoji-container');
@@ -394,6 +404,9 @@ socket.on('room_data', (data) => {
     isHost = true;
   }
 
+  // Berhasil join room, sembunyikan section login
+  document.getElementById('login-sec').classList.add('hidden');
+
   const playersHtml = data.players.map(p => {
     return p.face 
       ? `<span class="flex items-center gap-1"><img src="${p.face}" class="w-4 h-4 rounded-full object-cover"/> ${p.name}</span>`
@@ -411,5 +424,8 @@ socket.on('room_data', (data) => {
     currentTurnPlayer = data.players[data.turnIndex].name;
     document.getElementById('turn-display').innerText = currentTurnPlayer;
     updatePawns(data.players);
+  } else {
+    document.getElementById('waiting-sec').classList.remove('hidden');
+    document.getElementById('waiting-room-code').innerText = currentRoom;
   }
 });
