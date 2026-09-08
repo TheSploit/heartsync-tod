@@ -35,7 +35,6 @@ function getRandomCard(type) {
   return cardList[Math.floor(Math.random() * cardList.length)];
 }
 
-// Auto-cleanup memori server tiap 30 menit
 setInterval(() => {
   const now = Date.now();
   for (const roomId in rooms) {
@@ -48,7 +47,6 @@ setInterval(() => {
 
 io.on('connection', (socket) => {
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace, memoryPhotos }) => {
-    // Validasi Sisi Server: Nama & Room Wajib Diisi
     if (!playerName || !playerName.trim() || !roomId || !roomId.trim()) {
       socket.emit('error_message', { 
         message: "Nama dan Kode Room wajib diisi terlebih dahulu!" 
@@ -66,7 +64,7 @@ io.on('connection', (socket) => {
         isStarted: false,
         theme: 'rose',
         lastActive: Date.now(),
-        photos: [], // Foto tersimpan sementara di RAM server
+        photos: [],
         stats: { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 }
       };
     }
@@ -74,7 +72,6 @@ io.on('connection', (socket) => {
     const currentRoom = rooms[cleanRoomId];
     currentRoom.lastActive = Date.now();
 
-    // Simpan foto sementara jika ada
     if (memoryPhotos && Array.isArray(memoryPhotos) && memoryPhotos.length > 0) {
       currentRoom.photos = [...currentRoom.photos, ...memoryPhotos];
     }
@@ -236,6 +233,10 @@ io.on('connection', (socket) => {
 
   socket.on('send_quick_chat', ({ roomId, message, player }) => {
     io.sockets.in(roomId).emit('receive_quick_chat', { message, player });
+  });
+
+  socket.on('send_voice', ({ roomId, audioData, player }) => {
+    io.sockets.in(roomId).emit('receive_voice', { audioData, player });
   });
 
   socket.on('disconnecting', () => {
