@@ -17,8 +17,12 @@
 
   <div id="emoji-container" class="fixed inset-0 pointer-events-none z-50"></div>
 
-  <!-- Audio Controls Header -->
+  <!-- Top Action Bar -->
   <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
+    <!-- Tombol Dompet Voucher -->
+    <button onclick="openVoucherWallet()" class="bg-amber-500 text-white p-2.5 rounded-full shadow-lg hover:bg-amber-600 transition-all active:scale-90 flex items-center gap-1.5 text-xs font-bold px-3">
+      🎟️ <span class="hidden md:inline">Dompet Voucher</span>
+    </button>
     <!-- Tombol Mute SFX -->
     <button onclick="toggleSFX()" id="sfx-btn" class="bg-white/80 backdrop-blur-md border border-rose-200 p-2.5 rounded-full shadow-lg text-rose-500 hover:bg-rose-50 transition-all active:scale-90" title="Efek Suara (SFX)">
       <i id="sfx-icon" class="fa-solid fa-volume-high"></i>
@@ -38,7 +42,7 @@
       <p class="text-xs md:text-sm text-rose-400 font-medium">LDR Snakes & Ladders Pro Edition</p>
     </div>
 
-    <!-- Section 1: Join Room & Custom Avatar -->
+    <!-- Section 1: Join Room, Avatar & Memory Photos -->
     <div id="login-sec" class="space-y-5 my-2 max-w-md mx-auto relative">
       
       <div class="relative">
@@ -95,6 +99,19 @@
           <input type="file" id="face-input" accept="image/*" onchange="handleImageUpload(event)"
             class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 cursor-pointer">
         </div>
+      </div>
+
+      <!-- Module Upload Photo Memories -->
+      <div class="bg-purple-50/80 p-3.5 rounded-2xl border border-purple-200 space-y-2">
+        <label class="block text-xs font-bold text-purple-600 text-center uppercase tracking-wider">
+          📸 Upload Foto Kenangan Manis (Opsional)
+        </label>
+        <p class="text-[10px] text-gray-500 text-center leading-tight">
+          Foto akan muncul di petak Memory Tile! *(Hanya disimpan di RAM & langsung terhapus setelah selesai main)*
+        </p>
+        <input type="file" id="memory-photos-input" accept="image/*" multiple onchange="handleMemoryPhotosUpload(event)"
+          class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600 cursor-pointer">
+        <div id="memory-preview-container" class="flex gap-2 justify-center pt-1 overflow-x-auto"></div>
       </div>
 
       <button onclick="joinRoom()" 
@@ -193,18 +210,24 @@
         </div>
       </div>
 
-      <!-- Pop-up Event Modal dengan Verifikasi Tugas -->
+      <!-- Pop-up Event Modal (Ular, Tangga, TOD, Memory Photo) -->
       <div id="event-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 border-2 border-rose-300 shadow-2xl animate__animated animate__zoomIn">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-3 border-2 border-rose-300 shadow-2xl animate__animated animate__zoomIn">
           <span id="event-badge" class="px-3 py-1 bg-rose-100 text-rose-600 text-xs font-extrabold rounded-full uppercase">
             EVENT
           </span>
           <h3 id="event-title" class="text-base font-extrabold text-gray-800"></h3>
+          
+          <!-- Frame Foto Kenangan jika ada -->
+          <div id="event-photo-container" class="hidden my-2">
+            <img id="event-photo" class="w-full h-44 object-cover rounded-2xl border-2 border-purple-300 shadow-md animate__animated animate__pulse animate__infinite" />
+          </div>
+
           <p id="event-text" class="text-xs md:text-sm text-gray-600 italic leading-relaxed"></p>
           
           <button id="close-event-btn" onclick="closeModal()" 
             class="w-full py-2.5 bg-rose-500 text-white font-bold text-xs md:text-sm rounded-xl shadow hover:bg-rose-600 transition-all">
-            Sudah Dikerjakan! ✅
+            Lanjutkan Permainan
           </button>
         </div>
       </div>
@@ -232,6 +255,26 @@
           <button onclick="requestRematch()" 
             class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-lg hover:from-rose-600 hover:to-pink-600 transition-all active:scale-95">
             Main Lagi (Rematch) 🔄
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Dompet Voucher -->
+      <div id="wallet-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 border-2 border-amber-300 shadow-2xl animate__animated animate__zoomIn">
+          <div class="flex justify-between items-center border-b pb-2">
+            <h3 class="text-base font-extrabold text-amber-600 flex items-center gap-1.5">
+              🎟️ Dompet Voucher Kamu
+            </h3>
+            <button onclick="closeWalletModal()" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+          </div>
+          
+          <div id="wallet-list" class="space-y-2 max-h-60 overflow-y-auto p-1">
+            <p class="text-xs text-gray-400 text-center py-4">Belum ada voucher yang didapatkan. Menangkan game untuk mengklaim voucher!</p>
+          </div>
+
+          <button onclick="closeWalletModal()" class="w-full py-2 bg-amber-500 text-white font-bold text-xs rounded-xl shadow hover:bg-amber-600">
+            Tutup
           </button>
         </div>
       </div>
