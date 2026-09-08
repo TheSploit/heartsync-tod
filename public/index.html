@@ -13,21 +13,18 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
-<body id="app-body" class="bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500">
+<body id="app-body" class="bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500 select-none">
 
   <div id="emoji-container" class="fixed inset-0 pointer-events-none z-50"></div>
 
   <!-- Top Action Bar -->
   <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
-    <!-- Tombol Dompet Voucher -->
     <button onclick="openVoucherWallet()" class="bg-amber-500 text-white p-2.5 rounded-full shadow-lg hover:bg-amber-600 transition-all active:scale-90 flex items-center gap-1.5 text-xs font-bold px-3">
       🎟️ <span class="hidden md:inline">Dompet Voucher</span>
     </button>
-    <!-- Tombol Mute SFX -->
     <button onclick="toggleSFX()" id="sfx-btn" class="bg-white/80 backdrop-blur-md border border-rose-200 p-2.5 rounded-full shadow-lg text-rose-500 hover:bg-rose-50 transition-all active:scale-90" title="Efek Suara (SFX)">
       <i id="sfx-icon" class="fa-solid fa-volume-high"></i>
     </button>
-    <!-- Tombol BGM -->
     <button onclick="toggleBGM()" id="bgm-btn" class="bg-white/80 backdrop-blur-md border border-rose-200 p-2.5 rounded-full shadow-lg text-rose-500 hover:bg-rose-50 transition-all active:scale-90" title="Musik Latar (BGM)">
       <i id="bgm-icon" class="fa-solid fa-music"></i>
     </button>
@@ -101,7 +98,6 @@
         </div>
       </div>
 
-      <!-- Module Upload Photo Memories -->
       <div class="bg-purple-50/80 p-3.5 rounded-2xl border border-purple-200 space-y-2">
         <label class="block text-xs font-bold text-purple-600 text-center uppercase tracking-wider">
           📸 Upload Foto Kenangan Manis (Opsional)
@@ -160,7 +156,6 @@
         </div>
       </div>
 
-      <!-- Selector Tema Papan -->
       <div id="theme-selector" class="hidden flex items-center justify-center gap-2 text-xs font-bold text-gray-500 bg-rose-50/50 p-2 rounded-xl border border-rose-100">
         <span>🎨 Tema Papan (Host):</span>
         <button onclick="changeTheme('rose')" class="px-2 py-1 bg-rose-500 text-white rounded-lg text-[10px]">Rose</button>
@@ -205,6 +200,12 @@
               <button onclick="sendQuickChat('Awas kamu! 😜')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Awas kamu! 😜</button>
               <button onclick="sendQuickChat('Gombal mulu~ 😘')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Gombal mulu~ 😘</button>
               <button onclick="sendQuickChat('Lama mikir 🥱')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Lama mikir 🥱</button>
+            </div>
+
+            <div class="pt-2">
+              <button id="record-voice-btn" class="w-full py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold text-[11px] rounded-xl shadow border border-rose-300 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-microphone animate-pulse"></i> <span id="record-text">Tahan untuk Rekam Voice (20s)</span>
+              </button>
             </div>
           </div>
         </div>
