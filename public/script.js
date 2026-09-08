@@ -9,7 +9,9 @@ let selectedBody = '🧸';
 let userFaceData = null;
 let isHost = false;
 let isBGMPlaying = false;
+let isSFXEnabled = true;
 let bgmInterval = null;
+let playerPositions = {};
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -43,6 +45,18 @@ function copyInviteLink() {
   });
 }
 
+function toggleSFX() {
+  isSFXEnabled = !isSFXEnabled;
+  const sfxIcon = document.getElementById('sfx-icon');
+  if (isSFXEnabled) {
+    sfxIcon.className = "fa-solid fa-volume-high text-rose-600";
+    showNotice("Efek Suara (SFX) Menyala 🔊");
+  } else {
+    sfxIcon.className = "fa-solid fa-volume-xmark text-gray-400";
+    showNotice("Efek Suara (SFX) Dimatikan 🔇");
+  }
+}
+
 function toggleBGM() {
   if (!isHost) {
     showNotice("Hanya Room Master yang bisa mengatur musik latar! 🎵");
@@ -74,6 +88,8 @@ function playBGMNotes() {
 }
 
 function playSound(type) {
+  if (!isSFXEnabled) return;
+
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
@@ -123,6 +139,30 @@ function playSound(type) {
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
     osc.start();
     osc.stop(audioCtx.currentTime + 0.2);
+  }
+}
+
+function changeTheme(themeName) {
+  if (!isHost) {
+    showNotice("Hanya Room Master yang bisa mengubah tema! 🎨");
+    return;
+  }
+  socket.emit('change_theme', { roomId: currentRoom, theme: themeName });
+}
+
+function applyTheme(themeName) {
+  const body = document.getElementById('app-body');
+  const board = document.getElementById('board');
+
+  if (themeName === 'midnight') {
+    body.className = "bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500";
+    board.className = "md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-indigo-950/80 rounded-2xl border-2 border-indigo-700 relative";
+  } else if (themeName === 'sunset') {
+    body.className = "bg-gradient-to-br from-amber-100 via-orange-100 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500";
+    board.className = "md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-amber-100/80 rounded-2xl border-2 border-amber-300 relative";
+  } else {
+    body.className = "bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500";
+    board.className = "md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-rose-100/60 rounded-2xl border-2 border-rose-200 relative";
   }
 }
 
@@ -190,6 +230,8 @@ function renderBoard() {
       tile.classList.add('bg-emerald-100', 'border-emerald-300', 'text-emerald-700');
     } else if ([14, 21, 28].includes(i)) {
       tile.classList.add('bg-amber-100', 'border-amber-300', 'text-amber-700');
+    } else if ([7, 17, 24].includes(i)) {
+      tile.classList.add('bg-purple-200', 'border-purple-300', 'text-purple-700');
     } else if ([5, 8, 12, 19, 23, 27].includes(i)) {
       tile.classList.add('bg-rose-200', 'border-rose-300', 'text-rose-700');
     } else {
@@ -200,6 +242,7 @@ function renderBoard() {
     if (i === 30) badge = `FINISH 👑`;
     if ([3, 9, 16].includes(i)) badge = `${i} 🪜`;
     if ([14, 21, 28].includes(i)) badge = `${i} 🐍`;
+    if ([7, 17, 24].includes(i)) badge = `${i} 💖`;
     if ([5, 8, 12, 19, 23, 27].includes(i)) badge = `${i} ❓`;
 
     tile.innerHTML = `<span>${badge}</span><div id="pawns-${i}" class="flex gap-1 z-10 items-center justify-center"></div>`;
@@ -207,33 +250,60 @@ function renderBoard() {
   }
 }
 
-function updatePawns(players) {
-  for (let i = 1; i <= 30; i++) {
-    const pawnsContainer = document.getElementById(`pawns-${i}`);
-    if (pawnsContainer) pawnsContainer.innerHTML = '';
-  }
-
+// Smooth Walking Step-By-Step Animation
+function updatePawnsAnimated(players) {
   players.forEach(p => {
-    const pawnsContainer = document.getElementById(`pawns-${p.position}`);
-    if (pawnsContainer) {
-      const pawnWrapper = document.createElement('div');
-      pawnWrapper.className = `relative flex items-center justify-center animate__animated animate__bounceIn`;
-      pawnWrapper.title = p.name;
+    const oldPos = playerPositions[p.name] || 1;
+    const newPos = p.position;
 
-      if (p.face) {
-        pawnWrapper.innerHTML = `
-          <div class="relative w-7 h-7 md:w-9 md:h-9 flex items-center justify-center">
-            <span class="text-lg md:text-2xl">${p.body}</span>
-            <img src="${p.face}" class="absolute -top-1 w-4 h-4 md:w-5 md:h-5 rounded-full border border-white object-cover shadow-sm" />
-          </div>
-        `;
-      } else {
-        pawnWrapper.innerHTML = `<span class="text-base md:text-xl">${p.body}</span>`;
-      }
+    if (oldPos !== newPos) {
+      let step = oldPos;
+      const stepInterval = setInterval(() => {
+        if (oldPos < newPos) step++;
+        else step--;
 
-      pawnsContainer.appendChild(pawnWrapper);
+        renderSinglePawn(p, step);
+
+        if (step === newPos) {
+          clearInterval(stepInterval);
+          playerPositions[p.name] = newPos;
+        }
+      }, 250);
+    } else {
+      renderSinglePawn(p, newPos);
     }
   });
+}
+
+function renderSinglePawn(p, pos) {
+  for (let i = 1; i <= 30; i++) {
+    const container = document.getElementById(`pawns-${i}`);
+    if (container) {
+      const existing = container.querySelector(`[data-player="${p.name}"]`);
+      if (existing) existing.remove();
+    }
+  }
+
+  const pawnsContainer = document.getElementById(`pawns-${pos}`);
+  if (pawnsContainer) {
+    const pawnWrapper = document.createElement('div');
+    pawnWrapper.setAttribute('data-player', p.name);
+    pawnWrapper.className = `relative flex items-center justify-center animate__animated animate__bounceIn`;
+    pawnWrapper.title = p.name;
+
+    if (p.face) {
+      pawnWrapper.innerHTML = `
+        <div class="relative w-7 h-7 md:w-9 md:h-9 flex items-center justify-center">
+          <span class="text-lg md:text-2xl">${p.body}</span>
+          <img src="${p.face}" class="absolute -top-1 w-4 h-4 md:w-5 md:h-5 rounded-full border border-white object-cover shadow-sm" />
+        </div>
+      `;
+    } else {
+      pawnWrapper.innerHTML = `<span class="text-base md:text-xl">${p.body}</span>`;
+    }
+
+    pawnsContainer.appendChild(pawnWrapper);
+  }
 }
 
 function joinRoom() {
@@ -288,6 +358,10 @@ function closeModal() {
   document.getElementById('event-modal').classList.add('hidden');
 }
 
+socket.on('theme_updated', (data) => {
+  applyTheme(data.theme);
+});
+
 socket.on('error_message', (data) => {
   showNotice(data.message);
 });
@@ -327,7 +401,7 @@ socket.on('dice_rolled', (data) => {
 
   currentTurnPlayer = data.turnPlayer;
 
-  updatePawns(data.players);
+  updatePawnsAnimated(data.players);
 
   if (data.winnerData) {
     playSound('win');
@@ -346,7 +420,7 @@ socket.on('dice_rolled', (data) => {
       }
 
       document.getElementById('victory-modal').classList.remove('hidden');
-    }, 500);
+    }, 1500);
   } else if (data.eventData) {
     if (data.eventData.type.includes('TANGGA')) playSound('ladder');
     if (data.eventData.type.includes('ULAR')) playSound('snake');
@@ -355,8 +429,16 @@ socket.on('dice_rolled', (data) => {
       document.getElementById('event-badge').innerText = `${data.eventData.type} (${data.eventData.targetPlayer})`;
       document.getElementById('event-title').innerText = data.eventData.title;
       document.getElementById('event-text').innerText = `"${data.eventData.text}"`;
+      
+      const closeBtn = document.getElementById('close-event-btn');
+      if (data.eventData.isChallenge) {
+        closeBtn.innerText = "Sudah Dikerjakan! ✅";
+      } else {
+        closeBtn.innerText = "Lanjutkan Permainan";
+      }
+
       document.getElementById('event-modal').classList.remove('hidden');
-    }, 600);
+    }, 1500);
   }
 });
 
@@ -371,7 +453,8 @@ socket.on('game_reset', (data) => {
   document.getElementById('dice-view').innerText = '🎲';
   document.getElementById('dice-result-text').innerText = 'Gilirannya dimainkan!';
 
-  updatePawns(data.players);
+  playerPositions = {};
+  updatePawnsAnimated(data.players);
 });
 
 socket.on('sync_bgm', (data) => {
@@ -402,9 +485,9 @@ socket.on('player_status', (data) => {
 socket.on('room_data', (data) => {
   if (data.players.length > 0 && data.players[0].name === currentPlayer) {
     isHost = true;
+    document.getElementById('theme-selector').classList.remove('hidden');
   }
 
-  // Berhasil join room, sembunyikan section login
   document.getElementById('login-sec').classList.add('hidden');
 
   const playersHtml = data.players.map(p => {
@@ -415,6 +498,10 @@ socket.on('room_data', (data) => {
 
   document.getElementById('players-list').innerHTML = playersHtml || 'Menunggu...';
 
+  if (data.theme) {
+    applyTheme(data.theme);
+  }
+
   if (data.players.length >= 2 || data.isStarted) {
     document.getElementById('waiting-sec').classList.add('hidden');
     document.getElementById('game-sec').classList.remove('hidden');
@@ -423,7 +510,7 @@ socket.on('room_data', (data) => {
 
     currentTurnPlayer = data.players[data.turnIndex].name;
     document.getElementById('turn-display').innerText = currentTurnPlayer;
-    updatePawns(data.players);
+    updatePawnsAnimated(data.players);
   } else {
     document.getElementById('waiting-sec').classList.remove('hidden');
     document.getElementById('waiting-room-code').innerText = currentRoom;
