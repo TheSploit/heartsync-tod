@@ -14,6 +14,10 @@ let isSFXEnabled = true;
 let bgmInterval = null;
 let playerPositions = {};
 
+let mediaRecorder = null;
+let audioChunks = [];
+let recordTimeout = null;
+
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -25,6 +29,8 @@ window.addEventListener('DOMContentLoaded', () => {
       roomInput.value = roomParam.toUpperCase();
     }
   }
+
+  setupVoiceRecorder();
 });
 
 function closeHint(hintId) {
@@ -143,6 +149,66 @@ function playSound(type) {
   }
 }
 
+function setupVoiceRecorder() {
+  const btn = document.getElementById('record-voice-btn');
+  const txt = document.getElementById('record-text');
+  if (!btn) return;
+
+  const startRecording = async (e) => {
+    e.preventDefault();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          socket.emit('send_voice', {
+            roomId: currentRoom,
+            audioData: reader.result,
+            player: currentPlayer
+          });
+        };
+        reader.readAsDataURL(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      txt.innerText = "Merekam... Lepas untuk Kirim 🔴";
+      btn.classList.add('bg-red-600', 'animate-pulse');
+
+      recordTimeout = setTimeout(() => {
+        stopRecording();
+      }, 20500);
+
+    } catch (err) {
+      showNotice("Izinkan akses mikrofon browser untuk kirim suara!");
+    }
+  };
+
+  const stopRecording = (e) => {
+    if (e) e.preventDefault();
+    if (recordTimeout) clearTimeout(recordTimeout);
+
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      txt.innerText = "Tahan untuk Rekam Voice (20s)";
+      btn.classList.remove('bg-red-600', 'animate-pulse');
+    }
+  };
+
+  btn.addEventListener('mousedown', startRecording);
+  btn.addEventListener('mouseup', stopRecording);
+  btn.addEventListener('touchstart', startRecording);
+  btn.addEventListener('touchend', stopRecording);
+}
+
 function changeTheme(themeName) {
   if (!isHost) {
     showNotice("Hanya Room Master yang bisa mengubah tema! 🎨");
@@ -156,13 +222,13 @@ function applyTheme(themeName) {
   const board = document.getElementById('board');
 
   if (themeName === 'midnight') {
-    body.className = "bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500";
+    body.className = "bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500 select-none";
     board.className = "md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-indigo-950/80 rounded-2xl border-2 border-indigo-700 relative";
   } else if (themeName === 'sunset') {
-    body.className = "bg-gradient-to-br from-amber-100 via-orange-100 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500";
+    body.className = "bg-gradient-to-br from-amber-100 via-orange-100 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500 select-none";
     board.className = "md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-amber-100/80 rounded-2xl border-2 border-amber-300 relative";
   } else {
-    body.className = "bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500";
+    body.className = "bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500 select-none";
     board.className = "md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-rose-100/60 rounded-2xl border-2 border-rose-200 relative";
   }
 }
@@ -228,7 +294,6 @@ function handleMemoryPhotosUpload(event) {
   });
 }
 
-// Digital Voucher History (LocalStorage)
 function saveVoucherToWallet(voucherText) {
   let wallet = JSON.parse(localStorage.getItem('heartsync_vouchers') || '[]');
   const newVoucher = {
@@ -382,14 +447,12 @@ function joinRoom() {
   const nameInput = document.getElementById('username').value.trim();
   const roomInput = document.getElementById('room-id').value.trim().toUpperCase();
 
-  // Validasi Wajib Isi Nama
   if (!nameInput) {
     showNotice("Isi nama panggilan manismu dulu ya! 💕");
     document.getElementById('username').focus();
     return;
   }
 
-  // Validasi Wajib Isi Kode Room
   if (!roomInput) {
     showNotice("Isi kode room dulu ya! 🔑");
     document.getElementById('room-id').focus();
@@ -440,6 +503,24 @@ function sendQuickChat(msg) {
 function closeModal() {
   document.getElementById('event-modal').classList.add('hidden');
 }
+
+socket.on('receive_voice', (data) => {
+  const audio = new Audio(data.audioData);
+  audio.play().catch(() => {});
+
+  const container = document.getElementById('emoji-container');
+  const el = document.createElement('div');
+  el.className = 'fixed bg-pink-500 text-white font-extrabold text-xs px-4 py-2 rounded-2xl shadow-xl animate__animated animate__bounceInUp flex items-center gap-2 border-2 border-white';
+  el.style.left = `${Math.random() * 60 + 20}%`;
+  el.style.bottom = '30%';
+  el.innerHTML = `<i class="fa-solid fa-volume-high animate-bounce"></i> <span>${data.player} mengirim pesan suara!</span>`;
+
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.replace('animate__bounceInUp', 'animate__fadeOutUp');
+    setTimeout(() => el.remove(), 500);
+  }, 3500);
+});
 
 socket.on('theme_updated', (data) => {
   applyTheme(data.theme);
