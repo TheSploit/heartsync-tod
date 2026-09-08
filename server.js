@@ -19,6 +19,7 @@ const rooms = {};
 const ladders = { 3: 11, 9: 18, 16: 25 };
 const snakes = { 14: 4, 21: 10, 28: 12 };
 const todTiles = [5, 8, 12, 19, 23, 27];
+const memoryTiles = [7, 17, 24]; // Petak Kenangan Manis
 
 const vouchers = [
   "Bebas Minta Dimanja Seharian Full! ❤️",
@@ -34,6 +35,17 @@ function getRandomCard(type) {
   return cardList[Math.floor(Math.random() * cardList.length)];
 }
 
+// Server Auto-Cleanup: Hapus room kosong tiap 30 menit
+setInterval(() => {
+  const now = Date.now();
+  for (const roomId in rooms) {
+    if (rooms[roomId].players.length === 0 || (now - rooms[roomId].lastActive > 3600000)) {
+      delete rooms[roomId];
+      console.log(`[Auto-Cleanup] Room ${roomId} dihapus dari memori.`);
+    }
+  }
+}, 1800000);
+
 io.on('connection', (socket) => {
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace }) => {
     if (!rooms[roomId]) {
@@ -41,14 +53,16 @@ io.on('connection', (socket) => {
         players: [],
         turnIndex: 0,
         isStarted: false,
+        theme: 'rose',
+        lastActive: Date.now(),
         stats: { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 }
       };
     }
 
     const currentRoom = rooms[roomId];
+    currentRoom.lastActive = Date.now();
     const requestedBody = avatarBody || '🧸';
 
-    // Validasi: Cek apakah avatar body sudah dipakai pemain lain di room ini
     const isAvatarTaken = currentRoom.players.some(p => p.id !== socket.id && p.body === requestedBody);
     if (isAvatarTaken) {
       socket.emit('error_message', { 
@@ -90,6 +104,7 @@ io.on('connection', (socket) => {
   socket.on('roll_dice', ({ roomId, player }) => {
     const room = rooms[roomId];
     if (!room) return;
+    room.lastActive = Date.now();
 
     const currentPlayer = room.players[room.turnIndex];
     if (!currentPlayer || currentPlayer.name !== player) return;
@@ -131,6 +146,14 @@ io.on('connection', (socket) => {
         targetPos: targetPos
       };
       newPos = targetPos;
+    } else if (memoryTiles.includes(newPos)) {
+      eventData = {
+        targetPlayer: currentPlayer.name,
+        type: 'MEMORY TILE 💖',
+        title: `Petak Kenangan Manis!`,
+        text: `Ingatkah kamu momen pertama kali kalian VC sampai larut malam? Beri pelukan hangat via layar ke pasanganmu!`,
+        targetPos: newPos
+      };
     } else if (todTiles.includes(newPos)) {
       room.stats.todHit++;
       const type = Math.random() < 0.5 ? 'truth' : 'dare';
@@ -140,7 +163,8 @@ io.on('connection', (socket) => {
         type: `PETAK ${type.toUpperCase()} 📜`,
         title: `Tantangan ${type.toUpperCase()} untuk ${currentPlayer.name}!`,
         text: card ? card.text : "Lakukan gombalan manis selama 10 detik!",
-        targetPos: newPos
+        targetPos: newPos,
+        isChallenge: true
       };
     }
 
@@ -155,6 +179,13 @@ io.on('connection', (socket) => {
       eventData: eventData,
       winnerData: winnerData
     });
+  });
+
+  socket.on('change_theme', ({ roomId, theme }) => {
+    if (rooms[roomId]) {
+      rooms[roomId].theme = theme;
+      io.sockets.in(roomId).emit('theme_updated', { theme });
+    }
   });
 
   socket.on('rematch_game', ({ roomId }) => {
@@ -199,5 +230,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server HeartSync berjalan di port ${PORT}`);
+  console.log(`Server HeartSync Pro berjalan di port ${PORT}`);
 });
