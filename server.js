@@ -19,7 +19,7 @@ const rooms = {};
 const ladders = { 3: 11, 9: 18, 16: 25 };
 const snakes = { 14: 4, 21: 10, 28: 12 };
 const todTiles = [5, 8, 12, 19, 23, 27];
-const memoryTiles = [7, 17, 24]; // Petak Kenangan Manis
+const memoryTiles = [7, 17, 24];
 
 const vouchers = [
   "Bebas Minta Dimanja Seharian Full! ❤️",
@@ -35,19 +35,19 @@ function getRandomCard(type) {
   return cardList[Math.floor(Math.random() * cardList.length)];
 }
 
-// Server Auto-Cleanup: Hapus room kosong tiap 30 menit
+// Auto-cleanup memori server tiap 30 menit
 setInterval(() => {
   const now = Date.now();
   for (const roomId in rooms) {
     if (rooms[roomId].players.length === 0 || (now - rooms[roomId].lastActive > 3600000)) {
       delete rooms[roomId];
-      console.log(`[Auto-Cleanup] Room ${roomId} dihapus dari memori.`);
+      console.log(`[Auto-Cleanup] Room ${roomId} & memori foto dibersihkan dari RAM.`);
     }
   }
 }, 1800000);
 
 io.on('connection', (socket) => {
-  socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace }) => {
+  socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace, memoryPhotos }) => {
     if (!rooms[roomId]) {
       rooms[roomId] = { 
         players: [],
@@ -55,15 +55,22 @@ io.on('connection', (socket) => {
         isStarted: false,
         theme: 'rose',
         lastActive: Date.now(),
+        photos: [], // Foto tersimpan sementara di RAM server
         stats: { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 }
       };
     }
 
     const currentRoom = rooms[roomId];
     currentRoom.lastActive = Date.now();
-    const requestedBody = avatarBody || '🧸';
 
+    // Simpan foto sementara ke array room jika dikirim
+    if (memoryPhotos && Array.isArray(memoryPhotos) && memoryPhotos.length > 0) {
+      currentRoom.photos = [...currentRoom.photos, ...memoryPhotos];
+    }
+
+    const requestedBody = avatarBody || '🧸';
     const isAvatarTaken = currentRoom.players.some(p => p.id !== socket.id && p.body === requestedBody);
+    
     if (isAvatarTaken) {
       socket.emit('error_message', { 
         message: `Avatar ${requestedBody} sudah dipakai pasanganmu! Pilih karakter avatar lain ya 😉` 
@@ -147,11 +154,17 @@ io.on('connection', (socket) => {
       };
       newPos = targetPos;
     } else if (memoryTiles.includes(newPos)) {
+      // Ambil foto acak jika ada foto yang diunggah
+      const photoImg = room.photos.length > 0 
+        ? room.photos[Math.floor(Math.random() * room.photos.length)] 
+        : null;
+
       eventData = {
         targetPlayer: currentPlayer.name,
         type: 'MEMORY TILE 💖',
         title: `Petak Kenangan Manis!`,
-        text: `Ingatkah kamu momen pertama kali kalian VC sampai larut malam? Beri pelukan hangat via layar ke pasanganmu!`,
+        text: `Momen indah bareng pasangan! Beri kecupan manis atau pelukan hangat via layar sekarang!`,
+        photo: photoImg,
         targetPos: newPos
       };
     } else if (todTiles.includes(newPos)) {
