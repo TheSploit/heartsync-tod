@@ -48,8 +48,19 @@ setInterval(() => {
 
 io.on('connection', (socket) => {
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace, memoryPhotos }) => {
-    if (!rooms[roomId]) {
-      rooms[roomId] = { 
+    // Validasi Sisi Server: Nama & Room Wajib Diisi
+    if (!playerName || !playerName.trim() || !roomId || !roomId.trim()) {
+      socket.emit('error_message', { 
+        message: "Nama dan Kode Room wajib diisi terlebih dahulu!" 
+      });
+      return;
+    }
+
+    const cleanName = playerName.trim();
+    const cleanRoomId = roomId.trim().toUpperCase();
+
+    if (!rooms[cleanRoomId]) {
+      rooms[cleanRoomId] = { 
         players: [],
         turnIndex: 0,
         isStarted: false,
@@ -60,10 +71,10 @@ io.on('connection', (socket) => {
       };
     }
 
-    const currentRoom = rooms[roomId];
+    const currentRoom = rooms[cleanRoomId];
     currentRoom.lastActive = Date.now();
 
-    // Simpan foto sementara ke array room jika dikirim
+    // Simpan foto sementara jika ada
     if (memoryPhotos && Array.isArray(memoryPhotos) && memoryPhotos.length > 0) {
       currentRoom.photos = [...currentRoom.photos, ...memoryPhotos];
     }
@@ -78,14 +89,13 @@ io.on('connection', (socket) => {
       return;
     }
 
-    socket.join(roomId);
-    const validName = playerName || `Pemain ${currentRoom.players.length + 1}`;
+    socket.join(cleanRoomId);
 
     const existingIndex = currentRoom.players.findIndex(p => p.id === socket.id);
     if (existingIndex !== -1) {
       currentRoom.players[existingIndex] = {
         id: socket.id,
-        name: validName,
+        name: cleanName,
         position: currentRoom.players[existingIndex].position || 1,
         body: requestedBody,
         face: avatarFace || null
@@ -93,7 +103,7 @@ io.on('connection', (socket) => {
     } else {
       currentRoom.players.push({ 
         id: socket.id, 
-        name: validName,
+        name: cleanName,
         position: 1,
         body: requestedBody,
         face: avatarFace || null
@@ -104,8 +114,8 @@ io.on('connection', (socket) => {
       currentRoom.isStarted = true;
     }
 
-    io.sockets.in(roomId).emit('room_data', currentRoom);
-    io.sockets.in(roomId).emit('player_status', { type: 'join', name: validName });
+    io.sockets.in(cleanRoomId).emit('room_data', currentRoom);
+    io.sockets.in(cleanRoomId).emit('player_status', { type: 'join', name: cleanName });
   });
 
   socket.on('roll_dice', ({ roomId, player }) => {
@@ -154,7 +164,6 @@ io.on('connection', (socket) => {
       };
       newPos = targetPos;
     } else if (memoryTiles.includes(newPos)) {
-      // Ambil foto acak jika ada foto yang diunggah
       const photoImg = room.photos.length > 0 
         ? room.photos[Math.floor(Math.random() * room.photos.length)] 
         : null;
