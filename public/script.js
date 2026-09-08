@@ -7,6 +7,7 @@ let currentPlayer = '';
 let currentTurnPlayer = '';
 let selectedBody = '🧸';
 let userFaceData = null;
+let uploadedMemoryPhotos = [];
 let isHost = false;
 let isBGMPlaying = false;
 let isSFXEnabled = true;
@@ -196,6 +197,78 @@ function handleImageUpload(event) {
   }
 }
 
+function handleMemoryPhotosUpload(event) {
+  const files = Array.from(event.target.files).slice(0, 3);
+  uploadedMemoryPhotos = [];
+  const previewContainer = document.getElementById('memory-preview-container');
+  previewContainer.innerHTML = '';
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 300;
+        canvas.height = 300;
+        ctx.drawImage(img, 0, 0, 300, 300);
+        
+        const compressedData = canvas.toDataURL('image/jpeg', 0.6);
+        uploadedMemoryPhotos.push(compressedData);
+
+        const imgEl = document.createElement('img');
+        imgEl.src = compressedData;
+        imgEl.className = 'w-12 h-12 rounded-lg object-cover border border-purple-300 shadow-sm';
+        previewContainer.appendChild(imgEl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Digital Voucher History (LocalStorage)
+function saveVoucherToWallet(voucherText) {
+  let wallet = JSON.parse(localStorage.getItem('heartsync_vouchers') || '[]');
+  const newVoucher = {
+    id: Date.now(),
+    text: voucherText,
+    date: new Date().toLocaleDateString('id-ID')
+  };
+  wallet.unshift(newVoucher);
+  localStorage.setItem('heartsync_vouchers', JSON.stringify(wallet));
+}
+
+function openVoucherWallet() {
+  let wallet = JSON.parse(localStorage.getItem('heartsync_vouchers') || '[]');
+  const walletList = document.getElementById('wallet-list');
+  walletList.innerHTML = '';
+
+  if (wallet.length === 0) {
+    walletList.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">Belum ada voucher yang didapatkan. Menangkan game untuk mengklaim voucher!</p>`;
+  } else {
+    wallet.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-left text-xs space-y-1';
+      card.innerHTML = `
+        <div class="flex justify-between items-center text-[10px] text-amber-600 font-bold">
+          <span>VOUCHER KHUSUS</span>
+          <span>${item.date}</span>
+        </div>
+        <p class="font-bold text-amber-900 italic">"${item.text}"</p>
+      `;
+      walletList.appendChild(card);
+    });
+  }
+
+  document.getElementById('wallet-modal').classList.remove('hidden');
+}
+
+function closeWalletModal() {
+  document.getElementById('wallet-modal').classList.add('hidden');
+}
+
 function showNotice(text) {
   playSound('warning');
   const existingNotice = document.getElementById('turn-notice');
@@ -250,7 +323,6 @@ function renderBoard() {
   }
 }
 
-// Smooth Walking Step-By-Step Animation
 function updatePawnsAnimated(players) {
   players.forEach(p => {
     const oldPos = playerPositions[p.name] || 1;
@@ -318,7 +390,8 @@ function joinRoom() {
       roomId: roomInput, 
       playerName: currentPlayer,
       avatarBody: selectedBody,
-      avatarFace: userFaceData
+      avatarFace: userFaceData,
+      memoryPhotos: uploadedMemoryPhotos
     });
   } else {
     showNotice("Isi kode room dulu ya!");
@@ -405,6 +478,8 @@ socket.on('dice_rolled', (data) => {
 
   if (data.winnerData) {
     playSound('win');
+    saveVoucherToWallet(data.winnerData.voucher);
+
     if (typeof confetti === 'function') {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
@@ -430,6 +505,16 @@ socket.on('dice_rolled', (data) => {
       document.getElementById('event-title').innerText = data.eventData.title;
       document.getElementById('event-text').innerText = `"${data.eventData.text}"`;
       
+      const photoContainer = document.getElementById('event-photo-container');
+      const photoImg = document.getElementById('event-photo');
+
+      if (data.eventData.photo) {
+        photoImg.src = data.eventData.photo;
+        photoContainer.classList.remove('hidden');
+      } else {
+        photoContainer.classList.add('hidden');
+      }
+
       const closeBtn = document.getElementById('close-event-btn');
       if (data.eventData.isChallenge) {
         closeBtn.innerText = "Sudah Dikerjakan! ✅";
