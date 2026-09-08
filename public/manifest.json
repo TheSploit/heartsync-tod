@@ -1,0 +1,15 @@
+{
+  "short_name": "HeartSync",
+  "name": "HeartSync - LDR Snakes & Ladders",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2589/2589175.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#fff1f2",
+  "theme_color": "#f43f5e",
+  "display": "standalone"
+}
