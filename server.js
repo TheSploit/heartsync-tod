@@ -35,22 +35,22 @@ function getRandomCard(type) {
   return cardList[Math.floor(Math.random() * cardList.length)];
 }
 
+// Auto-cleanup background setiap 10 menit
 setInterval(() => {
   const now = Date.now();
   for (const roomId in rooms) {
-    if (rooms[roomId].players.length === 0 || (now - rooms[roomId].lastActive > 3600000)) {
+    if (rooms[roomId].players.length === 0 || (now - rooms[roomId].lastActive > 1800000)) {
       delete rooms[roomId];
-      console.log(`[Auto-Cleanup] Room ${roomId} & memori foto dibersihkan dari RAM.`);
+      console.log(`[Auto-Cleanup] Room ${roomId} dibersihkan dari RAM.`);
     }
   }
-}, 1800000);
+}, 600000);
 
 io.on('connection', (socket) => {
+
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace, memoryPhotos }) => {
     if (!playerName || !playerName.trim() || !roomId || !roomId.trim()) {
-      socket.emit('error_message', { 
-        message: "Nama dan Kode Room wajib diisi terlebih dahulu!" 
-      });
+      socket.emit('error_message', { message: "Nama dan Kode Room wajib diisi!" });
       return;
     }
 
@@ -72,31 +72,35 @@ io.on('connection', (socket) => {
     const currentRoom = rooms[cleanRoomId];
     currentRoom.lastActive = Date.now();
 
-    if (memoryPhotos && Array.isArray(memoryPhotos) && memoryPhotos.length > 0) {
-      currentRoom.photos = [...currentRoom.photos, ...memoryPhotos];
+    // 1. BATASI MAKSIMAL 2 PEMAIN
+    const existingPlayer = currentRoom.players.find(p => p.id === socket.id);
+    if (!existingPlayer && currentRoom.players.length >= 2) {
+      socket.emit('error_message', { 
+        message: `Room ${cleanRoomId} sudah penuh (maksimal 2 pemain)! Gunakan kode room lain.` 
+      });
+      return;
     }
 
+    // 2. CEK AVATAR UNIK
     const requestedBody = avatarBody || '🧸';
     const isAvatarTaken = currentRoom.players.some(p => p.id !== socket.id && p.body === requestedBody);
-    
     if (isAvatarTaken) {
       socket.emit('error_message', { 
-        message: `Avatar ${requestedBody} sudah dipakai pasanganmu! Pilih karakter avatar lain ya 😉` 
+        message: `Avatar ${requestedBody} sudah dipakai pasanganmu! Pilih avatar lain ya 😉` 
       });
       return;
     }
 
     socket.join(cleanRoomId);
 
-    const existingIndex = currentRoom.players.findIndex(p => p.id === socket.id);
-    if (existingIndex !== -1) {
-      currentRoom.players[existingIndex] = {
-        id: socket.id,
-        name: cleanName,
-        position: currentRoom.players[existingIndex].position || 1,
-        body: requestedBody,
-        face: avatarFace || null
-      };
+    if (memoryPhotos && Array.isArray(memoryPhotos) && memoryPhotos.length > 0) {
+      currentRoom.photos = [...currentRoom.photos, ...memoryPhotos];
+    }
+
+    if (existingPlayer) {
+      existingPlayer.name = cleanName;
+      existingPlayer.body = requestedBody;
+      existingPlayer.face = avatarFace || null;
     } else {
       currentRoom.players.push({ 
         id: socket.id, 
@@ -239,16 +243,85 @@ io.on('connection', (socket) => {
     io.sockets.in(roomId).emit('receive_voice', { audioData, player });
   });
 
+  // 3. LOGIKA DISCONNECT & AUTO CLEANUP INSTAN
   socket.on('disconnecting', () => {
     for (const roomId of socket.rooms) {
       if (rooms[roomId]) {
-        const disconnectedPlayer = rooms[roomId].players.find(p => p.id === socket.id);
-        if (disconnectedPlayer) {
-          io.sockets.in(roomId).emit('player_status', { type: 'disconnect', name: disconnectedPlayer.name });
+        const room = rooms[roomId];
+        const leavingPlayer = room.players.find(p => p.id === socket.id);
+
+        if (leavingPlayer) {
+          // Hapus pemain dari list room
+          room.players = room.players.filter(p => p.id !== socket.id);
+
+          io.sockets.in(roomId).emit('player_status', { 
+            type: 'disconnect', 
+            name: leavingPlayer.name 
+          });
+
+          // Jika room jadi kosong, langsung hapus room detik itu juga!
+          if (room.players.length === 0) {
+            delete rooms[roomId];
+            console.log(`[Instant-Cleanup] Room ${roomId} dihapus karena semua pemain keluar.`);
+          } else {
+            // Reset giliran jika perlu
+            room.turnIndex = 0;
+            room.isStarted = false;
+            io.sockets.in(roomId).emit('room_data', room);
+          }
         }
       }
     }
   });
+});
+
+// DEVELOPER DASHBOARD HANDLERS
+socket.on('dev_get_rooms', ({ pin }) => {
+  const DEV_PIN = process.env.DEV_PIN || "123456"; 
+  if (pin !== DEV_PIN) {
+    socket.emit('dev_error', { message: "PIN Developer Salah!" });
+    return;
+  }
+
+  const roomDetails = [];
+  const memoryUsage = process.memoryUsage();
+
+  for (const roomId in rooms) {
+    const r = rooms[roomId];
+    roomDetails.push({
+      roomId: roomId,
+      playerCount: r.players.length,
+      players: r.players.map(p => ({
+        name: p.name,
+        position: p.position,
+        body: p.body,
+        hasFace: !!p.face
+      })),
+      isStarted: r.isStarted,
+      theme: r.theme,
+      turnPlayer: r.players[r.turnIndex] ? r.players[r.turnIndex].name : '-',
+      photoCount: r.photos ? r.photos.length : 0,
+      lastActive: new Date(r.lastActive).toLocaleTimeString('id-ID'),
+      stats: r.stats
+    });
+  }
+
+  socket.emit('dev_rooms_data', {
+    totalRooms: Object.keys(rooms).length,
+    totalPlayers: roomDetails.reduce((sum, r) => sum + r.playerCount, 0),
+    memoryUsageMB: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2),
+    uptimeSeconds: Math.floor(process.uptime()),
+    rooms: roomDetails
+  });
+});
+
+socket.on('dev_force_delete_room', ({ roomId, pin }) => {
+  const DEV_PIN = process.env.DEV_PIN || "123456";
+  if (pin === DEV_PIN && rooms[roomId]) {
+    delete rooms[roomId];
+    io.sockets.in(roomId).emit('player_status', { type: 'disconnect', name: 'ADMIN (Room Ditutup)' });
+    socket.emit('dev_notice', { message: `Room ${roomId} berhasil dihapus!` });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
