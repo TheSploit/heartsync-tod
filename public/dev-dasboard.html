@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Dashboard - HeartSync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
+
+  <!-- PIN Modal -->
+  <div id="pin-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center space-y-4 shadow-2xl">
+      <div class="text-rose-500 text-3xl"><i class="fa-solid fa-lock"></i></div>
+      <h2 class="text-lg font-bold">Developer Access</h2>
+      <p class="text-xs text-slate-400">Masukkan PIN Admin untuk melihat statistik server.</p>
+      <input type="password" id="pin-input" placeholder="Masukkan PIN (123456)" class="w-full bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-center text-sm tracking-widest text-white focus:outline-none focus:border-rose-500">
+      <button onclick="verifyPin()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-xl transition-all text-sm">Masuk Dashboard</button>
+    </div>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div id="dashboard-content" class="max-w-6xl mx-auto space-y-6 hidden">
+    <header class="flex justify-between items-center border-b border-slate-800 pb-4">
+      <div>
+        <h1 class="text-xl font-extrabold text-rose-500 flex items-center gap-2">
+          <i class="fa-solid fa-gauge-high"></i> HeartSync Server Monitor
+        </h1>
+        <p class="text-xs text-slate-400">Real-time telemetry & active game rooms management</p>
+      </div>
+      <button onclick="fetchStats()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+    </header>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+        <span class="text-xs text-slate-400">Active Rooms</span>
+        <h3 id="stat-rooms" class="text-2xl font-extrabold text-rose-400">0</h3>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+        <span class="text-xs text-slate-400">Total Players Online</span>
+        <h3 id="stat-players" class="text-2xl font-extrabold text-emerald-400">0</h3>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+        <span class="text-xs text-slate-400">Server Memory Usage</span>
+        <h3 id="stat-memory" class="text-2xl font-extrabold text-indigo-400">0 MB</h3>
+      </div>
+    </div>
+
+    <!-- Active Rooms Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+      <h3 class="text-sm font-bold text-slate-300">Daftar Room Aktif</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-800/50 text-slate-400 uppercase text-[10px]">
+            <tr>
+              <th class="p-3 rounded-l-xl">Room ID</th>
+              <th class="p-3">Jumlah Pemain</th>
+              <th class="p-3">Pemain</th>
+              <th class="p-3">Giliran Saat Ini</th>
+              <th class="p-3 rounded-r-xl text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="rooms-table-body" class="divide-y divide-slate-800">
+            <tr>
+              <td colspan="5" class="p-4 text-center text-slate-500">Memuat data room...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentPin = "123456";
+
+    function verifyPin() {
+      const pinInput = document.getElementById('pin-input').value;
+      currentPin = pinInput;
+      // Test ambil data ke server untuk verifikasi PIN
+      socket.emit('dev_get_rooms', { pin: currentPin });
+    }
+
+    socket.on('dev_error', (data) => {
+      alert(data.message);
+    });
+
+    socket.on('dev_notice', (data) => {
+      alert(data.message);
+      fetchStats();
+    });
+
+    socket.on('dev_rooms_data', (data) => {
+      // Jika berhasil menerima data, berarti PIN benar dan sembunyikan modal
+      document.getElementById('pin-modal').classList.add('hidden');
+      document.getElementById('dashboard-content').classList.remove('hidden');
+
+      document.getElementById('stat-rooms').innerText = data.totalRooms;
+      document.getElementById('stat-players').innerText = data.totalPlayers;
+      document.getElementById('stat-memory').innerText = data.memoryUsageMB + ' MB';
+
+      const tbody = document.getElementById('rooms-table-body');
+      tbody.innerHTML = '';
+
+      if (data.rooms.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Tidak ada room aktif saat ini.</td></tr>`;
+        return;
+      }
+
+      data.rooms.forEach(r => {
+        const playersStr = r.players.map(p => `${p.body} ${p.name}`).join(', ');
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/30';
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-white">${r.roomId}</td>
+          <td class="p-3">${r.playerCount}/2</td>
+          <td class="p-3">${playersStr}</td>
+          <td class="p-3 text-rose-400 font-semibold">${r.turnPlayer}</td>
+          <td class="p-3 text-center">
+            <button onclick="forceDeleteRoom('${r.roomId}')" class="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-2.5 py-1 rounded-lg transition-all text-[10px] font-bold border border-red-500/30">Hapus Room</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+
+    function fetchStats() {
+      socket.emit('dev_get_rooms', { pin: currentPin });
+    }
+
+    function forceDeleteRoom(roomId) {
+      if (confirm(`Yakin ingin menghapus room ${roomId}?`)) {
+        socket.emit('dev_force_delete_room', { roomId, pin: currentPin });
+      }
+    }
+
+    // Auto refresh tiap 5 detik jika dashboard terbuka
+    setInterval(() => {
+      if (!document.getElementById('dashboard-content').classList.contains('hidden')) {
+        fetchStats();
+      }
+    }, 5000);
+  </script>
+</body>
+</html>
