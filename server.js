@@ -35,6 +35,7 @@ function getRandomCard(type) {
   return cardList[Math.floor(Math.random() * cardList.length)];
 }
 
+// Auto-cleanup background setiap 10 menit
 setInterval(() => {
   const now = Date.now();
   for (const roomId in rooms) {
@@ -45,7 +46,6 @@ setInterval(() => {
   }
 }, 600000);
 
-// SEMUA EVENT SOCKET HARUS ADA DI DALAM SINI
 io.on('connection', (socket) => {
 
   socket.on('join_room', ({ roomId, playerName, avatarBody, avatarFace, memoryPhotos }) => {
@@ -65,7 +65,6 @@ io.on('connection', (socket) => {
         theme: 'rose',
         lastActive: Date.now(),
         photos: [],
-        syncHolds: {},
         stats: { totalRolls: 0, laddersHit: 0, snakesHit: 0, todHit: 0 }
       };
     }
@@ -73,6 +72,7 @@ io.on('connection', (socket) => {
     const currentRoom = rooms[cleanRoomId];
     currentRoom.lastActive = Date.now();
 
+    // 1. BATASI MAKSIMAL 2 PEMAIN
     const existingPlayer = currentRoom.players.find(p => p.id === socket.id);
     if (!existingPlayer && currentRoom.players.length >= 2) {
       socket.emit('error_message', { 
@@ -81,6 +81,7 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // 2. CEK AVATAR UNIK
     const requestedBody = avatarBody || '🧸';
     const isAvatarTaken = currentRoom.players.some(p => p.id !== socket.id && p.body === requestedBody);
     if (isAvatarTaken) {
@@ -100,15 +101,13 @@ io.on('connection', (socket) => {
       existingPlayer.name = cleanName;
       existingPlayer.body = requestedBody;
       existingPlayer.face = avatarFace || null;
-      existingPlayer.peerId = socket.id;
     } else {
       currentRoom.players.push({ 
         id: socket.id, 
         name: cleanName,
         position: 1,
         body: requestedBody,
-        face: avatarFace || null,
-        peerId: socket.id
+        face: avatarFace || null
       });
     }
 
@@ -205,34 +204,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Heartbeat Sync Handlers
-  socket.on('trigger_sync_test', ({ roomId, player }) => {
-    if (rooms[roomId]) {
-      rooms[roomId].syncHolds = {};
-      io.sockets.in(roomId).emit('open_sync_modal', { player });
-    }
-  });
-
-  socket.on('heartbeat_hold_start', ({ roomId, player }) => {
-    const room = rooms[roomId];
-    if (room) {
-      room.syncHolds[player] = true;
-      const keys = Object.keys(room.syncHolds);
-      if (keys.length >= 2 && keys.every(k => room.syncHolds[k] === true)) {
-        io.sockets.in(roomId).emit('sync_success');
-        room.syncHolds = {};
-      }
-    }
-  });
-
-  socket.on('heartbeat_hold_stop', ({ roomId, player }) => {
-    const room = rooms[roomId];
-    if (room && room.syncHolds) {
-      delete room.syncHolds[player];
-      io.sockets.in(roomId).emit('sync_cancel');
-    }
-  });
-
   socket.on('change_theme', ({ roomId, theme }) => {
     if (rooms[roomId]) {
       rooms[roomId].theme = theme;
@@ -272,6 +243,7 @@ io.on('connection', (socket) => {
     io.sockets.in(roomId).emit('receive_voice', { audioData, player });
   });
 
+  // 3. LOGIKA DISCONNECT & AUTO CLEANUP INSTAN
   socket.on('disconnecting', () => {
     for (const roomId of socket.rooms) {
       if (rooms[roomId]) {
@@ -299,7 +271,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // DEVELOPER DASHBOARD HANDLERS (SEKARANG SUDAH DI DALAM IO.ON CONNECTION)
+  // --- DEVELOPER DASHBOARD SOCKET HANDLERS (DI DALAM KONEKSI) ---
   socket.on('dev_get_rooms', ({ pin }) => {
     const DEV_PIN = process.env.DEV_PIN || "123456"; 
     if (pin !== DEV_PIN) {
@@ -348,7 +320,7 @@ io.on('connection', (socket) => {
     }
   });
 
-}); // BATAS PENUTUP CONNECTION SOCKET
+});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
