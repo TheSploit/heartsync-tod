@@ -3,287 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HeartSync 💕 - Ular Tangga LDR</title>
-  
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#f43f5e">
+  <title>HeartSync - Game Ular Tangga Pasangan</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body id="app-body" class="bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 min-h-screen flex items-center justify-center p-3 md:p-8 relative overflow-x-hidden transition-all duration-500 select-none">
-
-  <div id="emoji-container" class="fixed inset-0 pointer-events-none z-50"></div>
-
-  <!-- Top Action Bar -->
-  <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
-    <button onclick="openVoucherWallet()" class="bg-amber-500 text-white p-2.5 rounded-full shadow-lg hover:bg-amber-600 transition-all active:scale-90 flex items-center gap-1.5 text-xs font-bold px-3">
-      🎟️ <span class="hidden md:inline">Dompet Voucher</span>
-    </button>
-    <button onclick="toggleSFX()" id="sfx-btn" class="bg-white/80 backdrop-blur-md border border-rose-200 p-2.5 rounded-full shadow-lg text-rose-500 hover:bg-rose-50 transition-all active:scale-90" title="Efek Suara (SFX)">
-      <i id="sfx-icon" class="fa-solid fa-volume-high"></i>
-    </button>
-    <button onclick="toggleBGM()" id="bgm-btn" class="bg-white/80 backdrop-blur-md border border-rose-200 p-2.5 rounded-full shadow-lg text-rose-500 hover:bg-rose-50 transition-all active:scale-90" title="Musik Latar (BGM)">
-      <i id="bgm-icon" class="fa-solid fa-music"></i>
-    </button>
-  </div>
-
-  <div class="w-full max-w-md md:max-w-6xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-rose-200/50 p-4 md:p-8 transition-all duration-300 relative z-10">
-    
-    <div class="text-center mb-4 md:mb-6">
-      <h1 class="text-2xl md:text-4xl font-extrabold text-rose-600 tracking-tight flex items-center justify-center gap-2">
-        HeartSync <i class="fa-solid fa-heart animate-pulse text-rose-500"></i>
-      </h1>
-      <p class="text-xs md:text-sm text-rose-400 font-medium">LDR Snakes & Ladders Pro Edition</p>
-    </div>
-
-    <!-- Section 1: Join Room, Avatar & Memory Photos -->
-    <div id="login-sec" class="space-y-5 my-2 max-w-md mx-auto relative">
-      
-      <div class="relative">
-        <label class="block text-xs font-bold text-gray-600 mb-1">NAMA KAMU <span class="text-rose-500">*</span></label>
-        <input type="text" id="username" placeholder="Ketik namamu di sini..." required
-          class="w-full px-4 py-2.5 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm">
-        
-        <div id="hint-name" class="absolute -top-3 right-0 md:-right-44 bg-rose-500 text-white text-[11px] p-2.5 rounded-xl shadow-lg z-20 w-40 animate__animated animate__bounceIn">
-          <div class="flex justify-between items-start gap-1 mb-1 border-b border-rose-400 pb-1">
-            <span class="font-bold">💡 Panduan Nama</span>
-            <button onclick="closeHint('hint-name')" class="text-white hover:text-rose-200 font-black">✕</button>
-          </div>
-          <p class="leading-tight">Isi nama panggilan manismu biar terbaca di papan permainan!</p>
-          <div class="hidden md:block absolute top-4 -left-2 w-0 h-0 border-t-4 border-t-transparent border-r-8 border-r-rose-500 border-b-4 border-b-transparent"></div>
-        </div>
-      </div>
-
-      <div class="relative">
-        <label class="block text-xs font-bold text-gray-600 mb-1">KODE ROOM <span class="text-rose-500">*</span></label>
-        <input type="text" id="room-id" placeholder="misal: KITA2026" required
-          class="w-full px-4 py-2.5 rounded-xl bg-rose-50/50 border border-rose-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-400 uppercase text-sm">
-
-        <div id="hint-room" class="absolute -top-3 right-0 md:-right-44 bg-rose-500 text-white text-[11px] p-2.5 rounded-xl shadow-lg z-20 w-40 animate__animated animate__bounceIn">
-          <div class="flex justify-between items-start gap-1 mb-1 border-b border-rose-400 pb-1">
-            <span class="font-bold">🔑 Panduan Room</span>
-            <button onclick="closeHint('hint-room')" class="text-white hover:text-rose-200 font-black">✕</button>
-          </div>
-          <p class="leading-tight">Buat kode bebas (contoh: KITA123) lalu bagikan ke pasanganmu!</p>
-          <div class="hidden md:block absolute top-4 -left-2 w-0 h-0 border-t-4 border-t-transparent border-r-8 border-r-rose-500 border-b-4 border-b-transparent"></div>
-        </div>
-      </div>
-
-      <div class="bg-rose-50/80 p-3.5 rounded-2xl border border-rose-200 space-y-3">
-        <label class="block text-xs font-bold text-rose-500 text-center uppercase tracking-wider">
-          <i class="fa-solid fa-user-gear mr-1"></i> Bikin Avatar Lucu Kamu
-        </label>
-        
-        <div class="flex justify-center items-center gap-3">
-          <div class="relative w-16 h-16 rounded-full bg-white border-2 border-rose-300 shadow flex items-center justify-center overflow-hidden">
-            <span id="preview-body" class="text-3xl">🧸</span>
-            <img id="preview-face" class="absolute top-1 w-8 h-8 rounded-full object-cover border border-white shadow-sm hidden" />
-          </div>
-        </div>
-
-        <div class="flex justify-center gap-2">
-          <button type="button" onclick="selectBody('🧸')" class="px-3 py-1 bg-white border rounded-lg text-sm">🧸</button>
-          <button type="button" onclick="selectBody('🐱')" class="px-3 py-1 bg-white border rounded-lg text-sm">🐱</button>
-          <button type="button" onclick="selectBody('🐰')" class="px-3 py-1 bg-white border rounded-lg text-sm">🐰</button>
-          <button type="button" onclick="selectBody('🐸')" class="px-3 py-1 bg-white border rounded-lg text-sm">🐸</button>
-        </div>
-
-        <div>
-          <label class="block text-[10px] font-bold text-gray-500 text-center mb-1">UPLOAD FOTO WAJAH (OPSIONAL)</label>
-          <input type="file" id="face-input" accept="image/*" onchange="handleImageUpload(event)"
-            class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-500 file:text-white hover:file:bg-rose-600 cursor-pointer">
-        </div>
-      </div>
-
-      <div class="bg-purple-50/80 p-3.5 rounded-2xl border border-purple-200 space-y-2">
-        <label class="block text-xs font-bold text-purple-600 text-center uppercase tracking-wider">
-          📸 Upload Foto Kenangan Manis (Opsional)
-        </label>
-        <p class="text-[10px] text-gray-500 text-center leading-tight">
-          Foto akan muncul di petak Memory Tile! *(Hanya disimpan di RAM & langsung terhapus setelah selesai main)*
-        </p>
-        <input type="file" id="memory-photos-input" accept="image/*" multiple onchange="handleMemoryPhotosUpload(event)"
-          class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600 cursor-pointer">
-        <div id="memory-preview-container" class="flex gap-2 justify-center pt-1 overflow-x-auto"></div>
-      </div>
-
-      <button onclick="joinRoom()" 
-        class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl shadow-lg shadow-rose-300 transition-all active:scale-95 text-sm">
-        Masuk Room <i class="fa-solid fa-arrow-right ml-1"></i>
-      </button>
-    </div>
-
-    <!-- Section 2: Waiting Room -->
-    <div id="waiting-sec" class="hidden text-center py-8 space-y-4 max-w-md mx-auto animate__animated animate__fadeIn">
-      <div class="w-20 h-20 mx-auto bg-rose-100 rounded-full flex items-center justify-center border-2 border-rose-300 text-3xl animate-bounce">
-        ⏳
-      </div>
-      <h2 class="text-xl font-extrabold text-rose-600">Menunggu Pasangan Bergabung...</h2>
-      <p class="text-xs text-gray-500 leading-relaxed">
-        Bagikan Kode Room <span id="waiting-room-code" class="font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-md border border-rose-200"></span> ke pasanganmu agar bisa langsung main bareng!
-      </p>
-
-      <button onclick="copyInviteLink()" 
-        class="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto">
-        <i class="fa-solid fa-copy"></i> Copy Link Undangan
-      </button>
-
-      <div class="pt-2">
-        <span class="text-xs font-bold text-rose-400 animate-pulse">
-          <i class="fa-solid fa-spinner fa-spin mr-1"></i> Menghubungkan ke server...
-        </span>
-      </div>
-    </div>
-
-    <!-- Section 3: Game Area -->
-    <div id="game-sec" class="hidden space-y-4 animate__animated animate__fadeIn">
-      
-      <div class="flex items-center justify-between bg-rose-50/80 p-3 md:p-4 rounded-2xl border border-rose-100 text-xs md:text-sm">
-        <div>
-          <span class="text-[9px] md:text-xs font-bold text-rose-400 uppercase block">ROOM</span>
-          <span id="room-display" class="font-bold text-gray-800"></span>
-        </div>
-        <div class="text-center">
-          <span class="text-[9px] md:text-xs font-bold text-rose-400 uppercase block">GILIRAN</span>
-          <span id="turn-display" class="font-extrabold text-rose-600">Menunggu...</span>
-        </div>
-        <div class="text-right">
-          <span class="text-[9px] md:text-xs font-bold text-rose-400 uppercase block">PEMAIN</span>
-          <span id="players-list" class="font-medium text-gray-600 flex items-center justify-end gap-2"></span>
-        </div>
-      </div>
-
-      <div id="theme-selector" class="hidden flex items-center justify-center gap-2 text-xs font-bold text-gray-500 bg-rose-50/50 p-2 rounded-xl border border-rose-100">
-        <span>🎨 Tema Papan (Host):</span>
-        <button onclick="changeTheme('rose')" class="px-2 py-1 bg-rose-500 text-white rounded-lg text-[10px]">Rose</button>
-        <button onclick="changeTheme('midnight')" class="px-2 py-1 bg-indigo-900 text-white rounded-lg text-[10px]">Midnight</button>
-        <button onclick="changeTheme('sunset')" class="px-2 py-1 bg-amber-500 text-white rounded-lg text-[10px]">Sunset</button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-start">
-        <div id="board" class="md:col-span-3 grid grid-cols-5 gap-2 md:gap-3 p-3 md:p-4 bg-rose-100/60 rounded-2xl border-2 border-rose-200 relative transition-all duration-300">
-        </div>
-
-        <div class="space-y-3">
-          <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm text-center space-y-3">
-            <span class="text-xs font-bold text-gray-400 block uppercase">Dadu Interaktif</span>
-            
-            <div id="dice-view" class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-rose-500 text-white font-black text-3xl md:text-4xl rounded-2xl flex items-center justify-center shadow-md border-2 border-rose-300">
-              🎲
-            </div>
-
-            <div>
-              <span id="dice-result-text" class="text-xs md:text-sm font-bold text-gray-700 block mt-1">Gilirannya dimainkan!</span>
-            </div>
-
-            <button onclick="rollDice()" id="roll-btn" 
-              class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-md hover:from-rose-600 hover:to-pink-600 transition-all active:scale-95 disabled:opacity-50">
-              KOCOK DADU
-            </button>
-          </div>
-
-          <div class="bg-white p-3 rounded-2xl border border-rose-100 shadow-sm text-center space-y-2">
-            <span class="text-[10px] font-bold text-gray-400 uppercase block">Reaksi & Chat Cepat</span>
-            
-            <div class="flex justify-center gap-2">
-              <button onclick="sendEmoji('❤️')" class="text-xl p-2 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all active:scale-90">❤️</button>
-              <button onclick="sendEmoji('😂')" class="text-xl p-2 bg-amber-50 hover:bg-amber-100 rounded-xl transition-all active:scale-90">😂</button>
-              <button onclick="sendEmoji('😭')" class="text-xl p-2 bg-sky-50 hover:bg-sky-100 rounded-xl transition-all active:scale-90">😭</button>
-              <button onclick="sendEmoji('😡')" class="text-xl p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-all active:scale-90">😡</button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-1.5 pt-1">
-              <button onclick="sendQuickChat('Kangen! 💕')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Kangen! 💕</button>
-              <button onclick="sendQuickChat('Awas kamu! 😜')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Awas kamu! 😜</button>
-              <button onclick="sendQuickChat('Gombal mulu~ 😘')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Gombal mulu~ 😘</button>
-              <button onclick="sendQuickChat('Lama mikir 🥱')" class="py-1 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg border border-rose-200 transition-all active:scale-95 truncate">Lama mikir 🥱</button>
-            </div>
-
-            <div class="pt-2">
-              <button id="record-voice-btn" class="w-full py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold text-[11px] rounded-xl shadow border border-rose-300 transition-all active:scale-95 flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-microphone animate-pulse"></i> <span id="record-text">Tahan untuk Rekam Voice (20s)</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pop-up Event Modal -->
-      <div id="event-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-3 border-2 border-rose-300 shadow-2xl animate__animated animate__zoomIn">
-          <span id="event-badge" class="px-3 py-1 bg-rose-100 text-rose-600 text-xs font-extrabold rounded-full uppercase">
-            EVENT
-          </span>
-          <h3 id="event-title" class="text-base font-extrabold text-gray-800"></h3>
-          
-          <div id="event-photo-container" class="hidden my-2">
-            <img id="event-photo" class="w-full h-44 object-cover rounded-2xl border-2 border-purple-300 shadow-md animate__animated animate__pulse animate__infinite" />
-          </div>
-
-          <p id="event-text" class="text-xs md:text-sm text-gray-600 italic leading-relaxed"></p>
-          
-          <button id="close-event-btn" onclick="closeModal()" 
-            class="w-full py-2.5 bg-rose-500 text-white font-bold text-xs md:text-sm rounded-xl shadow hover:bg-rose-600 transition-all">
-            Lanjutkan Permainan
-          </button>
-        </div>
-      </div>
-
-      <!-- Modal Kemenangan & Statistik -->
-      <div id="victory-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
-        <div class="bg-gradient-to-b from-rose-50 to-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 border-2 border-rose-300 shadow-2xl animate__animated animate__bounceIn">
-          <div class="text-5xl animate-bounce">🏆</div>
-          <h2 class="text-xl font-black text-rose-600">SELAMAT!</h2>
-          <p id="winner-text" class="text-sm font-bold text-gray-700"></p>
-
-          <div class="bg-amber-50 p-3 rounded-2xl border-2 border-dashed border-amber-300 space-y-1">
-            <span class="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest block">VOUCHER HADIAH SPESIAL</span>
-            <p id="voucher-text" class="text-xs font-bold text-amber-900 italic"></p>
-          </div>
-
-          <div class="bg-rose-50/80 p-3 rounded-2xl border border-rose-200 text-left text-xs space-y-1 text-gray-600">
-            <span class="font-bold text-rose-500 block text-center uppercase text-[10px]">Statistik Game Kali Ini</span>
-            <div class="flex justify-between"><span>🎲 Total Kocokan Dadu:</span> <b id="stat-rolls">0</b></div>
-            <div class="flex justify-between"><span>🪜 Naik Tangga:</span> <b id="stat-ladders">0</b></div>
-            <div class="flex justify-between"><span>🐍 Terperosok Ular:</span> <b id="stat-snakes">0</b></div>
-            <div class="flex justify-between"><span>📜 Tantangan Truth/Dare:</span> <b id="stat-tod">0</b></div>
-          </div>
-
-          <button onclick="requestRematch()" 
-            class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-lg hover:from-rose-600 hover:to-pink-600 transition-all active:scale-95">
-            Main Lagi (Rematch) 🔄
-          </button>
-        </div>
-      </div>
-
-      <!-- Modal Dompet Voucher -->
-      <div id="wallet-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 border-2 border-amber-300 shadow-2xl animate__animated animate__zoomIn">
-          <div class="flex justify-between items-center border-b pb-2">
-            <h3 class="text-base font-extrabold text-amber-600 flex items-center gap-1.5">
-              🎟️ Dompet Voucher Kamu
-            </h3>
-            <button onclick="closeWalletModal()" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
-          </div>
-          
-          <div id="wallet-list" class="space-y-2 max-h-60 overflow-y-auto p-1">
-            <p class="text-xs text-gray-400 text-center py-4">Belum ada voucher yang didapatkan. Menangkan game untuk mengklaim voucher!</p>
-          </div>
-
-          <button onclick="closeWalletModal()" class="w-full py-2 bg-amber-500 text-white font-bold text-xs rounded-xl shadow hover:bg-amber-600">
-            Tutup
-          </button>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-
   <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-8 font-sans relative">
+
+  <!-- TOMBOL AKSES DEVELOPER / ADMIN (POJOK KANAN ATAS) -->
+  <a href="/dev-dashboard.html" 
+     title="Developer Dashboard" 
+     class="fixed top-4 right-4 z-50 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-rose-400 p-2.5 rounded-full border border-slate-800 backdrop-blur-md shadow-xl transition-all duration-300 flex items-center justify-center w-11 h-11 group">
+    <i class="fa-solid fa-user-shield text-base group-hover:scale-110 transition-transform"></i>
+  </a>
+
+  <!-- Header / Hero Section -->
+  <header class="max-w-md mx-auto text-center mt-6 space-y-3">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
+      <i class="fa-solid fa-heart animate-pulse"></i> Special Edition Couple Game
+    </div>
+    <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-pink-600">
+      HeartSync Pro
+    </h1>
+    <p class="text-xs md:text-sm text-slate-400">
+      Uji seberapa kompak kamu dan pasanganmu lewat permainan ular tangga interaktif dengan tantangan seru!
+    </p>
+  </header>
+
+  <!-- Form Room & Player Join -->
+  <main class="max-w-md mx-auto w-full my-auto space-y-6 bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-xl shadow-2xl">
+    <form id="join-form" class="space-y-4">
+      
+      <!-- Input Nama -->
+      <div class="space-y-1.5">
+        <label for="player-name" class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-user text-rose-400"></i> Nama Kamu
+        </label>
+        <input type="text" id="player-name" placeholder="Masukkan nama panggilanmu" required
+               class="w-full bg-slate-800/80 border border-slate-700/80 px-4 py-3 rounded-2xl text-sm text-white focus:outline-none focus:border-rose-500 transition-all">
+      </div>
+
+      <!-- Input Kode Room -->
+      <div class="space-y-1.5">
+        <label for="room-id" class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-key text-rose-400"></i> Kode Room Pasangan
+        </label>
+        <input type="text" id="room-id" placeholder="Contoh: LOVE12" required uppercase
+               class="w-full bg-slate-800/80 border border-slate-700/80 px-4 py-3 rounded-2xl text-sm font-bold tracking-wider text-rose-400 placeholder:font-normal focus:outline-none focus:border-rose-500 transition-all uppercase">
+      </div>
+
+      <!-- Pilih Avatar -->
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-face-smile text-rose-400"></i> Pilih Avatar Karakter
+        </label>
+        <div class="grid grid-cols-5 gap-2" id="avatar-selector">
+          <button type="button" data-avatar="🧸" class="avatar-btn bg-slate-800 border-2 border-rose-500 rounded-2xl p-2.5 text-2xl hover:scale-105 transition-all">🧸</button>
+          <button type="button" data-avatar="🐰" class="avatar-btn bg-slate-800 border-2 border-transparent rounded-2xl p-2.5 text-2xl hover:scale-105 transition-all">🐰</button>
+          <button type="button" data-avatar="🐱" class="avatar-btn bg-slate-800 border-2 border-transparent rounded-2xl p-2.5 text-2xl hover:scale-105 transition-all">🐱</button>
+          <button type="button" data-avatar="🦊" class="avatar-btn bg-slate-800 border-2 border-transparent rounded-2xl p-2.5 text-2xl hover:scale-105 transition-all">🦊</button>
+          <button type="button" data-avatar="🐼" class="avatar-btn bg-slate-800 border-2 border-transparent rounded-2xl p-2.5 text-2xl hover:scale-105 transition-all">🐼</button>
+        </div>
+      </div>
+
+      <!-- Tombol Masuk Game -->
+      <button type="submit" 
+              class="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-rose-500/25 transition-all duration-300 flex items-center justify-center gap-2 text-sm">
+        <i class="fa-solid fa-gamepad"></i> Masuk Arenaku
+      </button>
+
+    </form>
+  </main>
+
+  <!-- Footer Link ke Developer Dashboard -->
+  <footer class="max-w-md mx-auto text-center space-y-2 py-4">
+    <p class="text-xs text-slate-500">&copy; HeartSync Pro - Buat Momen Manis Bersama Pasangan</p>
+    <div>
+      <a href="/dev-dashboard.html" class="inline-flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-rose-400 transition-colors">
+        <i class="fa-solid fa-code"></i> Developer Dashboard & Telemetry
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    let selectedAvatar = '🧸';
+
+    // Handler Pilihan Avatar
+    document.querySelectorAll('.avatar-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.avatar-btn').forEach(b => {
+          b.classList.remove('border-rose-500');
+          b.classList.add('border-transparent');
+        });
+        btn.classList.remove('border-transparent');
+        btn.classList.add('border-rose-500');
+        selectedAvatar = btn.getAttribute('data-avatar');
+      });
+    });
+
+    // Submit Form
+    document.getElementById('join-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const playerName = document.getElementById('player-name').value.trim();
+      const roomId = document.getElementById('room-id').value.trim().toUpperCase();
+
+      if (!playerName || !roomId) return;
+
+      // Simpan preferensi sementara di localStorage
+      localStorage.setItem('hs_playerName', playerName);
+      localStorage.setItem('hs_roomId', roomId);
+      localStorage.setItem('hs_avatar', selectedAvatar);
+
+      // Redirect ke halaman arena permainan
+      window.location.href = `/game.html?room=${roomId}&name=${encodeURIComponent(playerName)}&avatar=${encodeURIComponent(selectedAvatar)}`;
+    });
+  </script>
 </body>
 </html>
